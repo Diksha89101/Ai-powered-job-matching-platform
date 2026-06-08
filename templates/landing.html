@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Job Platform</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        html {
+    scroll-behavior: smooth;
+}
+        body {
+           background: url("{{ url_for('static', filename='images/bg.jpeg') }}") no-repeat center center fixed;
+        background-size: cover;
+            color: white;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: -1;
+        }
+
+        /* NAVBAR */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px 40px;
+            background: rgba(123, 92, 255, 0.85);
+        }
+
+        .navbar a {
+            color: white;
+            margin-left: 20px;
+            text-decoration: none;
+        }
+
+        /* HERO */
+        .hero {
+            height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: rgba(13, 11, 31, 0.6);
+        }
+
+        .hero h1 {
+            font-size: 36px;
+        }
+
+        .hero button {
+            background: #7b5cff;
+            padding: 16px 38px;
+            border-radius: 28px;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* ROLES */
+        .roles {
+            text-align: center;
+            padding: 60px 20px;
+            background: rgba(26, 8, 51, 0.6);
+        }
+
+        .role-container {
+            display: flex;
+            justify-content: center;
+            gap: 120px;
+        }
+
+        .card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        .card img {
+            width: 280px;
+        }
+        .card button {
+                background: linear-gradient(90deg, #6366f1, #8b5cf6);
+                border: none;
+                padding: 14px 28px;
+                border-radius: 25px;
+                color: white;
+                cursor: pointer;
+                font-size: 15px;
+                box-shadow: 0 0 15px rgba(99,102,241,0.5);
+}
+        /* NEW SECTIONS */
+        .section {
+            padding: 60px 80px;
+            background: rgba(20, 10, 40, 0.6);
+        }
+
+        .section h2 {
+            color: #9d7bff;
+            margin-bottom: 20px;
+        }
+
+        .card-box {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 12px;
+        }
+
+        /* CONTACT */
+        input,
+        textarea {
+            width: 100%;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+        }
+
+        textarea {
+            height: 100px;
+        }
+
+        .send-btn {
+            background: #7b5cff;
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+        
+    </style>
+</head>
+
+<body>
+
+    <header class="navbar">
+        <div class="logo">AI Jobs</div>
+        <nav>
+            <a href="login.html">Login</a>
+            <a href="#about">About</a>
+            <a href="#info">Info</a>
+            <a href="#contact">Contact</a>
+        </nav>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div>
+            <h1>Where AI meets your Dream career!</h1><br>
+            <p>Your Skills deserve the Right Job - Let AI find it</p>
+            <br><br>
+            <button onclick="getStarted()">Get Started</button>
+        </div>
+    </section>
+
+    <!-- ROLES -->
+    <section class="roles">
+        <h2>How do you want to get started?</h2>
+
+        <div class="role-container">
+            <div class="card" onclick="selectRole('jobseeker')">
+              <img src="{{ url_for('static', filename='images/js.png') }}" alt="Job Seeker">  
+                <button>Job Seeker</button>
+            </div>
+
+            <div class="card" onclick="selectRole('recruiter')">
+                <img src="{{ url_for('static', filename='images/rec.png') }}" alt="Recruiter">
+                <button>Recruiter</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section class="section" id="about">
+        <h2>About Us</h2>
+        <div class="card-box">
+            <p>
+                AI Job Platform helps job seekers and recruiters connect using intelligent matching.
+                We simplify hiring and job searching with smart <br>recommendations.We are a teamed for passionate about solving real-world problems using technology and Artificial Intelligence.
+                Our project, AI Powered Job Matching Platform, <br>is designed to improve the recruitment process by reducing inefficiencies
+                and mismatches between job seekers and employers.
+                <br>
+                Our goal is to build a smart system that helps candidates find relevant jobs and enables recruiters to identify the most
+                suitable candidates quickly and accurately. <br>By combining AI, Machine Learning, and Natural Language Processing (NLP), we
+                aim to create a faster, fair, and more efficient hiring ecosystem.
+            </p>
+        </div>
+    </section>
+
+    <!-- INFO -->
+    <section class="section" id="info">
+        <h2>Information</h2>
+        <div class="card-box">
+            The AI Powered Job Matching Platform provides a smarter and faster way to connect job seekers and recruiters. By
+            automating resume analysis and job matching,<br> it reduces manual effort, improves accuracy, and ensures better hiring
+            decisions. This system creates a more efficient<br> and reliable recruitment process for both candidates and employers
+            <ul>
+                <li>AI-powered job matching</li>
+                <li>Resume analysis</li>
+                <li>Smart recruiter recommendations</li>
+                <li>Fast hiring process</li>
+            </ul>
+
+        </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="section" id="contact">
+        <h2>Contact Us</h2>
+        <div class="card-box">
+            <input type="text" placeholder="Your Name">
+            <input type="email" placeholder="Your Email">
+            <textarea placeholder="Your Message"></textarea>
+            <button class="send-btn" onclick="sendMessage()">Send</button>
+        </div>
+    </section>
+    
+
+    <script>
+        document.querySelectorAll('.navbar a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener("click", function (e) {
+                    e.preventDefault();
+
+                    const target = document.querySelector(this.getAttribute("href"));
+
+                    window.scrollTo({
+                        top: target.offsetTop - 60, // adjust navbar height
+                        behavior: "smooth"
+                    });
+                });
+            });
+        function getStarted() {
+            document.querySelector('.roles').scrollIntoView({ behavior: 'smooth' });
+        }
+function selectRole(role) {
+    if (role === "jobseeker") {
+        window.location.href = "register_jobseeker.html";
+    } else {
+        window.location.href = "register_recruiter.html";
+    }
+}
+
+
+
+        function sendMessage() {
+                const name = document.querySelector('input[type="text"]').value.trim();
+                const email = document.querySelector('input[type="email"]').value.trim();
+                const message = document.querySelector('textarea').value.trim();
+
+                if (!name || !email || !message) {
+                    alert("Please fill all fields!");
+                    return;
+                }
+
+                alert("Message sent!");
+            }
+    </script>
+
+</body>
+
+</html>

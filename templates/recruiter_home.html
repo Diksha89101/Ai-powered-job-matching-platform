@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recruiter Home</title>
+    <style>
+        body {
+            background: #1D0936;
+            color: #fff;
+            font-family: 'Segoe UI';
+            margin: 0
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 40px;
+            background: rgba(123, 92, 255, .85)
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 18px
+        }
+
+        .navbar a {
+            color: #fff;
+            text-decoration: none
+        }
+
+        .profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            position: relative
+        }
+
+        .profile img {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #8b5cf6
+        }
+
+        .dropdown {
+            position: absolute;
+            right: 0;
+            top: 50px;
+            background: #2a1650;
+            border-radius: 10px;
+            overflow: hidden;
+            display: none
+        }
+
+        .dropdown a {
+            display: block;
+            padding: 10px;
+            color: #fff;
+            text-decoration: none
+        }
+
+        .dropdown a:hover {
+            background: #8b5cf6
+        }
+
+        .container {
+            padding: 40px
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px
+        }
+
+        .card {
+            background: rgba(255, 255, 255, .05);
+            padding: 20px;
+            border-radius: 12px;
+            transition: .3s;
+            cursor: pointer
+        }
+
+        .card:hover {
+            background: rgba(99, 102, 241, .2)
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            color: #fff;
+            cursor: pointer
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="navbar">
+        <div>AI JOB</div>
+
+        <div class="nav-right">
+            <a href="#">Home</a>
+
+            <div class="profile" onclick="toggleDropdown()">
+                <img id="profilePic" alt="profile picture" src="/static/uploads/default.png">
+                <span id="userName">Recruiter</span>
+
+                <div id="dropdown" class="dropdown">
+                    <a href="recruiter_profile.html">Profile</a>
+                    <a href="#" onclick="logout()">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>Welcome, <span id="welcomeName">Recruiter</span></h1>
+
+        <div class="grid">
+            <div class="card" onclick="go('post_job.html')">
+                <h3>Post Job</h3><button>Create</button>
+            </div>
+
+            <div class="card" onclick="go('manage_jobs.html')">
+                <h3>Manage Jobs</h3><button>Manage</button>
+            </div>
+
+            <div class="card" onclick="go('applicants.html')">
+                <h3>Applicants</h3><button>View</button>
+            </div>
+
+            <div class="card" onclick="go('send_notifications.html')">
+                <h3>Send Notifications</h3><button>Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        function go(path) {
+            window.location.href = path;
+        }
+
+        function toggleDropdown() {
+            const d = document.getElementById('dropdown');
+            d.style.display = d.style.display === 'block' ? 'none' : 'block';
+        }
+
+        async function loadRecruiter() {
+            const user = getUser();
+            if (!user) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            document.getElementById('userName').innerText = user.name || 'Recruiter';
+            document.getElementById('welcomeName').innerText = user.name || 'Recruiter';
+
+            const res = await fetchWithAuth('/auth/me');
+            const data = await res.json();
+            if (data.profile_image) {
+                document.getElementById('profilePic').src = data.profile_image;
+            }
+        }
+
+        loadRecruiter();
+    </script>
+
+</body>
+
+</html>

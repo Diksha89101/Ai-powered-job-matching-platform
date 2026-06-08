@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Job Seeker Profile</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="sidebar">
+        <h2>AI JOB</h2>
+        <a href="jobseeker_home.html">Home</a>
+        <a href="seeker_dashboard.html">Dashboard</a>
+        <a href="browse_jobs.html">Browse Jobs</a>
+        <a href="applied_jobs.html">Applied Jobs</a>
+        <a href="notifications.html">Notifications</a>
+        <a href="#" onclick="logout()">Logout</a>
+    </div>
+    <div class="main-content">
+        <h2>My Profile</h2>
+        <div style="display: flex; gap: 30px; margin-bottom: 30px;">
+            <div class="avatar-wrap">
+                <img id="avatar" src="/static/uploads/default.png" class="avatar">
+                <label class="upload-btn">
+                    Edit Picture
+                    <input type="file" id="photoInput" accept="image/*" style="display:none">
+                </label>
+            </div>
+        </div>
+        <div id="profileMessage" class="flash" style="display:none; margin-bottom: 20px;"></div>
+        <form id="profileForm" style="max-width: 600px;">
+            <input type="text" id="name" placeholder="Full Name" required>
+            <input type="email" id="email" placeholder="Email" required>
+            <textarea id="skills" placeholder="Skills (comma separated)"></textarea>
+            <select id="experience">
+                <option value="">Experience Level</option>
+                <option>Fresher</option>
+                <option>1-3 Years</option>
+                <option>3+ Years</option>
+            </select>
+            <label id="resumeLabel">Upload Resume</label>
+            <div id="resumeWrap" style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; background: rgba(255,255,255,0.05); padding: 6px 10px;">
+                <button type="button" id="resumeBtn" style="padding: 6px 14px; font-size: 13px; border-radius: 6px; background: #e5e7eb; border: 1px solid #d1d5db; color: #1f2937; cursor: pointer;">Choose File</button>
+                <span id="resumeFileName" style="font-size: 14px; color: #cbd5f5;">No file chosen</span>
+                <input type="file" id="resumeInput" accept=".pdf,.doc,.docx" style="display: none;">
+            </div>
+            <button type="submit" class="btn">Save Profile</button>
+        </form>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+        function renderResumeInsights(data) {
+            // Resume insights processing remains active, but the UI panel is hidden.
+            return;
+        }
+
+        async function loadProfile() {
+            const res = await fetchWithAuth('/auth/me');
+            const data = await res.json();
+
+            document.getElementById('name').value = data.name || '';
+            document.getElementById('email').value = data.email || '';
+            document.getElementById('skills').value = data.skills || '';
+            document.getElementById('experience').value = data.experience || '';
+            if (data.profile_image) {
+                document.getElementById('avatar').src = data.profile_image;
+            }
+
+            const resumeFileName = document.getElementById('resumeFileName');
+            const resumeLabel = document.getElementById('resumeLabel');
+            if (data.resume) {
+                resumeFileName.textContent = data.resume.split('/').pop();
+                resumeLabel.textContent = 'Change Resume';
+            } else {
+                resumeFileName.textContent = 'No file chosen';
+                resumeLabel.textContent = 'Upload Resume';
+            }
+
+            renderResumeInsights({
+                manual_skills: (data.skills || '').split(',').map((skill) => skill.trim()).filter(Boolean),
+                resume_skills: data.resume_skills || [],
+                profile_keywords: data.profile_keywords || [],
+                resume_parse_message: data.resume
+                    ? 'Saved resume NLP/OCR insights are ready for job matching.'
+                    : 'Upload a resume to extract skills from the resume only, with OCR fallback for scanned PDFs.'
+            });
+        }
+
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData();
+            formData.append('name', document.getElementById('name').value);
+            formData.append('email', document.getElementById('email').value);
+            formData.append('skills', document.getElementById('skills').value);
+            formData.append('experience', document.getElementById('experience').value);
+
+            const resume = document.getElementById('resumeInput').files[0];
+            if (resume) {
+                const maxSize = 2 * 1024 * 1024;
+                const lowerName = resume.name.toLowerCase();
+                const allowedExtensions = ['.pdf', '.doc', '.docx'];
+
+                if (!allowedExtensions.some((ext) => lowerName.endsWith(ext))) {
+                    showMessage('Only PDF, DOC, and DOCX files are allowed.', true);
+                    return;
+                }
+
+                if (resume.size > maxSize) {
+                    showMessage('File must be less than 2MB.', true);
+                    return;
+                }
+
+                formData.append('resume', resume);
+            }
+
+            const profilePhoto = document.getElementById('photoInput').files[0];
+            if (profilePhoto) {
+                const maxSize = 2 * 1024 * 1024;
+                const lowerName = profilePhoto.name.toLowerCase();
+                const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+
+                if (!allowedExtensions.some((ext) => lowerName.endsWith(ext))) {
+                    showMessage('Only image files (JPG, JPEG, PNG, GIF) are allowed for profile photo.', true);
+                    return;
+                }
+
+                if (profilePhoto.size > maxSize) {
+                    showMessage('Profile photo must be less than 2MB.', true);
+                    return;
+                }
+
+                formData.append('profile_image', profilePhoto);
+            }
+
+            const res = await fetchWithAuth('/users/profile', { method: 'PUT', body: formData });
+            const data = await res.json();
+
+            if (res.ok) {
+                renderResumeInsights(data);
+                showMessage(data.resume_parse_message || 'Profile saved!');
+                setTimeout(() => window.location.href = '/seeker_dashboard.html', 900);
+            } else {
+                showMessage(data.error || 'Error saving profile', true);
+            }
+        });
+
+        function showMessage(message, isError = false) {
+            const messageBox = document.getElementById('profileMessage');
+            messageBox.textContent = message;
+            messageBox.style.display = 'block';
+            messageBox.style.background = isError ? '#ef4444' : '#22c55e';
+        }
+
+        // Custom resume file picker
+        document.getElementById('resumeBtn').addEventListener('click', () => {
+            document.getElementById('resumeInput').click();
+        });
+        document.getElementById('resumeInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            document.getElementById('resumeFileName').textContent = file ? file.name : 'No file chosen';
+        });
+
+        // Handle photo preview when a file is selected
+        document.getElementById('photoInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('avatar').src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        loadProfile();
+    </script>
+</body>
+</html>

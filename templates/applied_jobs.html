@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Applied Jobs</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="sidebar">
+        <h2>AI JOB</h2>
+        <a href="jobseeker_home.html">Home</a>
+        <a href="browse_jobs.html">Browse Jobs</a>
+        <a href="seeker_dashboard.html">Dashboard</a>
+        <a href="applied_jobs.html">Applied Jobs</a>
+        <a href="notifications.html">Notifications</a>
+        <a href="#" onclick="logout()">Logout</a>
+    </div>
+
+    <div class="main-content">
+        <h2>Applied Jobs</h2>
+        <div id="appliedJobsList" style="display:flex;flex-direction:column;gap:12px;"></div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        async function loadAppliedJobs() {
+            const list = document.getElementById('appliedJobsList');
+            list.innerHTML = 'Loading...';
+            try {
+                const res = await fetchWithAuth('/jobs/applied');
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to load applied jobs');
+
+                if (!data.length) {
+                    list.innerHTML = '<p>You have not applied to any jobs yet.</p>';
+                    return;
+                }
+
+                list.innerHTML = data.map(item => `
+                    <div class="card" style="padding:16px;">
+                        <h3>${item.job.title}</h3>
+                        <p>${item.job.company} - ${item.job.location}</p>
+                        <p>Status: ${item.status || 'applied'}</p>
+                        <small>Applied on ${new Date(item.applied_at).toLocaleDateString()}</small>
+                    </div>
+                `).join('');
+            } catch (err) {
+                list.innerHTML = `<p>${err.message}</p>`;
+            }
+        }
+
+        loadAppliedJobs();
+    </script>
+</body>
+</html>

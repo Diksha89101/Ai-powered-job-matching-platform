@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Notifications</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="sidebar">
+        <h2>AI HIRE</h2>
+        <a href="/recruiter_home.html">Home</a>
+        <a href="/manage_jobs.html">Manage Jobs</a>
+        <a href="/send_notifications.html">Send Notifications</a>
+        <a href="#" onclick="logout()">Logout</a>
+    </div>
+
+    <div class="main-content">
+        <h2>Send Notifications</h2>
+        <select id="jobSelect" style="width:100%;max-width:420px;margin-bottom:12px;"></select>
+        <textarea id="message" placeholder="Write your message" style="width:100%;max-width:600px;height:120px;"></textarea>
+        <br><br>
+        <button class="btn" onclick="sendNotification()">Send To Applicants</button>
+        <p id="status" style="margin-top:12px;"></p>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        let jobs = [];
+
+        async function loadJobs() {
+            const select = document.getElementById('jobSelect');
+            select.innerHTML = '<option>Loading jobs...</option>';
+            try {
+                const res = await fetchWithAuth('/recruiter/jobs');
+                jobs = await res.json();
+                if (!res.ok) throw new Error(jobs.error || 'Failed to load jobs');
+
+                if (!jobs.length) {
+                    select.innerHTML = '<option value="">No jobs available</option>';
+                    return;
+                }
+
+                select.innerHTML = '<option value="">Select a job</option>' +
+                    jobs.map(j => `<option value="${j._id}">${j.title} - ${j.company}</option>`).join('');
+            } catch (err) {
+                select.innerHTML = '<option value="">Unable to load jobs</option>';
+                document.getElementById('status').innerText = err.message;
+            }
+        }
+
+        async function sendNotification() {
+            const jobId = document.getElementById('jobSelect').value;
+            const message = document.getElementById('message').value.trim();
+            const status = document.getElementById('status');
+
+            if (!jobId || !message) {
+                status.innerText = 'Please select a job and enter a message.';
+                return;
+            }
+
+            try {
+                const appRes = await fetchWithAuth(`/recruiter/jobs/${jobId}/applicants`);
+                const applicants = await appRes.json();
+                if (!appRes.ok) throw new Error(applicants.error || 'Failed to load applicants');
+
+                const userIds = applicants.map(a => a.seeker._id);
+                if (!userIds.length) {
+                    status.innerText = 'No applicants found for this job.';
+                    return;
+                }
+
+                const job = jobs.find(j => j._id === jobId);
+                const payload = {
+                    user_ids: userIds,
+                    message,
+                    job_title: job ? job.title : '',
+                    status: 'update'
+                };
+
+                const res = await fetchWithAuth('/notifications', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to send notifications');
+                status.innerText = 'Notifications sent successfully.';
+            } catch (err) {
+                status.innerText = err.message;
+            }
+        }
+
+        loadJobs();
+    </script>
+</body>
+</html>

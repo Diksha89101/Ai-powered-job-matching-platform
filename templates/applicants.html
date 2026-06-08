@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Applicants</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .job-card {
+            background: rgba(255, 255, 255, .05);
+            padding: 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: .3s;
+            margin-bottom: 12px;
+        }
+        .job-card:hover {
+            background: rgba(99, 102, 241, .2);
+        }
+        .job-card h3 {
+            margin: 0 0 8px 0;
+            color: #6366f1;
+        }
+        .job-card p {
+            margin: 4px 0;
+            color: #cbd5f5;
+            font-size: 14px;
+        }
+        .applicant-card {
+            background: rgba(255, 255, 255, .05);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+        .applicant-card h3 {
+            margin: 0 0 8px 0;
+            color: #8b5cf6;
+        }
+        .applicant-card p {
+            margin: 4px 0;
+            color: #cbd5f5;
+            font-size: 14px;
+        }
+        .applicant-card .detail-label {
+            color: #94a3b8;
+            font-weight: 500;
+        }
+        .resume-link {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 6px 12px;
+            background: #6366f1;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+        .resume-link:hover {
+            background: #4f46e5;
+        }
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 16px;
+            margin: 8px 0;
+        }
+        .back-btn {
+            background: transparent;
+            border: 1px solid #6366f1;
+            color: #6366f1;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 16px;
+        }
+        .back-btn:hover {
+            background: rgba(99, 102, 241, .2);
+        }
+        .section-title {
+            color: #fff;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>AI HIRE</h2>
+        <a href="/recruiter_home.html">Home</a>
+        <a href="/manage_jobs.html">Manage Jobs</a>
+        <a href="/send_notifications.html">Send Notifications</a>
+        <a href="#" onclick="logout()">Logout</a>
+    </div>
+
+    <div class="main-content">
+        <h2 class="section-title">Applicants</h2>
+        
+        <!-- Jobs List View -->
+        <div id="jobsView">
+            <h3 style="color: #cbd5f5; margin-bottom: 16px;">Your Posted Jobs</h3>
+            <p style="color: #94a3b8; margin-bottom: 16px;">Select a job to view its applicants</p>
+            <div id="jobsList"></div>
+        </div>
+
+        <!-- Applicants List View -->
+        <div id="applicantsView" style="display: none;">
+            <button class="back-btn" onclick="showJobs()">← Back to Jobs</button>
+            <h3 id="selectedJobTitle" style="color: #6366f1; margin-bottom: 8px;"></h3>
+            <p id="selectedJobInfo" style="color: #94a3b8; margin-bottom: 16px;"></p>
+            <div id="applicantsList"></div>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+<script>
+    let currentJobs = [];
+
+    async function loadJobs() {
+        const list = document.getElementById('jobsList');
+        list.innerHTML = 'Loading...';
+
+        try {
+            const res = await fetchWithAuth('/recruiter/jobs');
+            const jobs = await res.json();
+
+            if (!res.ok) throw new Error(jobs.error || 'Failed to load jobs');
+
+            currentJobs = jobs;
+
+            if (!jobs.length) {
+                list.innerHTML = '<p style="color: #94a3b8;">No jobs posted yet.</p>';
+                return;
+            }
+
+            list.innerHTML = jobs.map(job => `
+                <div class="job-card" onclick="viewApplicantsForJob('${job._id}')">
+                    <h3>${job.title}</h3>
+                    <p><strong>Company:</strong> ${job.company}</p>
+                    <p><strong>Location:</strong> ${job.location}</p>
+                    <p style="color: #6366f1;">Click to view applicants →</p>
+                </div>
+            `).join('');
+
+        } catch (err) {
+            list.innerHTML = `<p style="color: red;">${err.message}</p>`;
+        }
+    }
+
+    function viewApplicantsForJob(jobId) {
+        const job = currentJobs.find(j => j._id === jobId);
+        if (!job) return;
+
+        document.getElementById('jobsView').style.display = 'none';
+        document.getElementById('applicantsView').style.display = 'block';
+
+        document.getElementById('selectedJobTitle').textContent = job.title;
+        document.getElementById('selectedJobInfo').textContent = `${job.company} - ${job.location}`;
+
+        loadApplicants(jobId);
+    }
+
+    function showJobs() {
+        document.getElementById('applicantsView').style.display = 'none';
+        document.getElementById('jobsView').style.display = 'block';
+    }
+
+    async function loadApplicants(jobId) {
+        const list = document.getElementById('applicantsList');
+        list.innerHTML = 'Loading...';
+
+        try {
+            const res = await fetchWithAuth(`/recruiter/jobs/${jobId}/applicants`);
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error || 'Failed to load applicants');
+
+            if (!data.length) {
+                list.innerHTML = '<p style="color: #94a3b8;">No applicants yet.</p>';
+                return;
+            }
+
+            list.innerHTML = data.map(item => {
+                const seeker = item.seeker || {};
+
+                return `
+                <div class="applicant-card">
+                    <h3>${seeker.name || 'Candidate'}</h3>
+                    <p>Email: ${seeker.email || 'N/A'}</p>
+                    <p>Skills: ${seeker.skills || 'N/A'}</p>
+                    <p>Match: ${item.matchPercentage || 0}%</p>
+                </div>
+                `;
+            }).join('');
+
+        } catch (err) {
+            list.innerHTML = `<p style="color: red;">${err.message}</p>`;
+        }
+    }
+
+    function getJobIdFromUrl() {
+        const p = new URLSearchParams(window.location.search);
+        return p.get('job_id');
+    }
+
+    async function init() {
+        const jobIdFromUrl = getJobIdFromUrl();
+
+        if (jobIdFromUrl) {
+            await loadJobs();
+            const job = currentJobs.find(j => j._id === jobIdFromUrl);
+            if (job) {
+                viewApplicantsForJob(jobIdFromUrl);
+            }
+        } else {
+            loadJobs();
+        }
+    }
+
+    init();
+</script>
+    
+</body>
+</html>

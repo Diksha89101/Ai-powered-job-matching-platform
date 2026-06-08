@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse Jobs</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a, #1e293b, #312e81);
+            color: white;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 40px;
+            background: rgba(123, 92, 255, 0.85);
+        }
+
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin-left: 20px;
+        }
+
+        .container {
+            padding: 40px;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 15px;
+            border-radius: 15px;
+            -webkit-backdrop-filter: blur();
+            backdrop-filter: blur(10px);
+        }
+
+        .search-bar input,
+        .search-bar select {
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            width: 220px;
+            outline: none;
+        }
+
+        .search-bar input::placeholder {
+            color: #94a3b8;
+        }
+
+        .search-bar input:focus,
+        .search-bar select:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 10px #6366f1;
+        }
+
+        .search-bar button {
+            padding: 12px 22px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            color: white;
+            cursor: pointer;
+        }
+
+        .search-wrapper {
+            position: relative;
+        }
+
+        .suggestions {
+            position: absolute;
+            top: 110%;
+            left: 0;
+            width: 100%;
+            background: rgba(20, 10, 40, 0.95);
+            border-radius: 10px;
+            overflow: hidden;
+            display: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeSlide 0.25s ease;
+        }
+
+        .suggestion-item {
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .suggestion-item:hover {
+            background: rgba(99, 102, 241, 0.3);
+        }
+
+        @keyframes fadeSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .job-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .job-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .job-title {
+            color: #8b5cf6;
+            font-size: 18px;
+        }
+
+        .apply-btn {
+            margin-top: 10px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            color: white;
+            cursor: pointer;
+        }
+
+        .apply-btn[disabled] {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="navbar">
+        <div>AI JOB</div>
+        <div>
+            <a href="#">    Browse Jobs</a>
+            <a href="jobseeker_profile.html">Profile</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </div>
+    </div>
+
+    <div class="container">
+
+        <h2>Browse Jobs</h2>
+
+        <div class="search-bar">
+
+            <div class="search-wrapper">
+                <input type="text" id="searchInput" placeholder="Search jobs">
+                <div id="suggestions" class="suggestions"></div>
+            </div>
+
+            <input type="text" placeholder="Location" id="locationFilter">
+               
+            <button onclick="filterJobs()">Search</button>
+
+        </div>
+
+        <div id="jobList" class="job-list"></div>
+
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        const MIN_MATCH_PERCENTAGE_TO_APPLY = 50;
+        let allJobs = [];
+
+        async function loadJobs() {
+            const container = document.getElementById('jobList');
+            container.innerHTML = '<p>Loading jobs...</p>';
+
+            try {
+                const isJobSeeker = isLoggedIn() && getUser()?.role === 'jobseeker';
+                const res = isJobSeeker
+                    ? await fetchWithAuth('/jobs/recommended')
+                    : await fetch(`${API_URL}/jobs`);
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || 'Failed to load jobs');
+                }
+
+                allJobs = data;
+                displayJobs(allJobs);
+            } catch (error) {
+                container.innerHTML = `<p>${error.message}</p>`;
+            }
+        }
+
+        function displayJobs(jobs) {
+            const container = document.getElementById('jobList');
+            container.innerHTML = '';
+
+            if (!jobs.length) {
+                container.innerHTML = '<p>No jobs found.</p>';
+                return;
+            }
+
+            jobs.forEach(job => {
+                const matchedSkills = (job.matchedSkills || []).join(', ');
+                const missingSkills = (job.missingSkills || []).join(', ');
+                const isApplied = Boolean(job.alreadyApplied);
+                const lowMatch = !isApplied && typeof job.matchPercentage === 'number' && job.matchPercentage < MIN_MATCH_PERCENTAGE_TO_APPLY;
+                const buttonText = isApplied
+                    ? 'Applied'
+                    : lowMatch
+                        ? `Low Match (${job.matchPercentage || 0}%)`
+                        : 'Apply';
+                const buttonDisabled = isApplied || lowMatch ? 'disabled' : '';
+                const buttonTitle = lowMatch ? `Match must be at least ${MIN_MATCH_PERCENTAGE_TO_APPLY}% to apply.` : '';
+                const card = document.createElement('div');
+                card.className = 'job-card';
+                card.innerHTML = `
+                    <div class="job-info">
+                        <h4>${job.title}</h4>
+                        <p>${job.company} &middot; ${job.location || 'Location not specified'}</p>
+                        <p>${job.description ? `${job.description.substring(0, 100)}...` : 'No description provided.'}</p>
+                        ${typeof job.matchPercentage === 'number' ? `<p><strong>AI Match:</strong> ${job.matchPercentage}%</p>` : ''}
+                        ${matchedSkills ? `<p><strong>Matched skills:</strong> ${matchedSkills}</p>` : ''}
+                        ${missingSkills ? `<p><strong>Missing skills:</strong> ${missingSkills}</p>` : ''}
+                        ${lowMatch ? `<p style="color: #fde68a;"><strong>Minimum ${MIN_MATCH_PERCENTAGE_TO_APPLY}% match required to apply.</strong></p>` : ''}
+                    </div>
+                    <button class="apply-btn" onclick="applyJob('${job._id}')" ${buttonDisabled} title="${buttonTitle}">
+                        ${buttonText}
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        async function applyJob(jobId) {
+            const res = await fetchWithAuth(`/jobs/${jobId}/apply`, { method: 'POST' });
+            const data = await res.json();
+
+            if (res.ok) {
+                alert('Applied successfully!');
+                await loadJobs();
+            } else {
+                alert(data.error || 'Unable to apply for this job.');
+            }
+        }
+
+        function filterJobs() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const location = document.getElementById('locationFilter').value.toLowerCase();
+            const filtered = allJobs.filter(job =>
+                (job.title.toLowerCase().includes(search) || job.description?.toLowerCase().includes(search)) &&
+                (location === '' || (job.location && job.location.toLowerCase().includes(location)))
+            );
+            displayJobs(filtered);
+        }
+
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            const suggestions = document.getElementById('suggestions');
+            if (!query) {
+                suggestions.style.display = 'none';
+                return;
+            }
+
+            const filtered = allJobs.filter(job => job.title.toLowerCase().includes(query));
+            suggestions.innerHTML = '';
+            filtered.forEach(job => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.textContent = job.title;
+                div.onclick = () => {
+                    document.getElementById('searchInput').value = job.title;
+                    suggestions.style.display = 'none';
+                    filterJobs();
+                };
+                suggestions.appendChild(div);
+            });
+            suggestions.style.display = filtered.length ? 'block' : 'none';
+        });
+
+        loadJobs();
+    </script>
+
+</body>
+
+</html>

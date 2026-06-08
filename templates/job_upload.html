@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Applicants</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            display: flex;
+            height: 100vh;
+            background: #1D0936;
+            color: white;
+        }
+
+        .sidebar {
+            width: 240px;
+            padding: 24px;
+            background: rgba(255, 255, 255, 0.04);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar a {
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+            color: #cbd5f5;
+            text-decoration: none;
+        }
+
+        .sidebar a:hover {
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        .main {
+            flex: 1;
+            padding: 24px 40px;
+        }
+
+        h3 {
+            margin: 25px 0 10px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn {
+            padding: 8px 14px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            color: white;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="sidebar">
+        <h2>AI HIRE</h2>
+        <a href="recruiter_dashboard.html">Dashboard</a>
+        <a href="post_job.html">Post Job</a>
+        <a href="recruiter_profile.html">Profile</a>
+    </div>
+
+    <div class="main">
+
+        <!-- APPLIED -->
+        <h3>Applied Candidates</h3>
+        <div id="appliedContainer" class="container"></div>
+
+        <!-- RECOMMENDED -->
+        <h3>Recommended Candidates (50%+ Match)</h3>
+        <div id="recommendedContainer" class="container"></div>
+
+    </div>
+
+    <script>
+
+        // Job requirement
+        const jobSkills = ["html", "css", "javascript", "react"];
+
+        // Candidates
+        const candidates = [
+            { name: "Diksha", skills: ["html", "css", "javascript", "react"], applied: true },
+            { name: "Rahul", skills: ["python", "django"], applied: false },
+            { name: "Ananya", skills: ["html", "css", "javascript"], applied: false },
+            { name: "Kiran", skills: ["html", "css", "react"], applied: true }
+        ];
+
+        // Match function
+        function calculateMatch(candidateSkills) {
+            let match = 0;
+
+            jobSkills.forEach(skill => {
+                if (candidateSkills.includes(skill)) {
+                    match++;
+                }
+            });
+
+            return Math.round((match / jobSkills.length) * 100);
+        }
+
+        // Display
+        function displayCandidates() {
+            const appliedContainer = document.getElementById("appliedContainer");
+            const recommendedContainer = document.getElementById("recommendedContainer");
+
+            appliedContainer.innerHTML = "";
+            recommendedContainer.innerHTML = "";
+
+            candidates.forEach(candidate => {
+
+                const match = calculateMatch(candidate.skills);
+
+                const card = `
+            <div class="card">
+                <div>
+                    <h4>${candidate.name}</h4>
+                    <p>${candidate.skills.join(", ")}</p>
+                    <p>${match}% Match</p>
+                </div>
+            </div>
+        `;
+
+                // Applied candidates
+                if (candidate.applied) {
+                    appliedContainer.innerHTML += card;
+                }
+                // Recommended (NOT applied + >=50%)
+                else if (match >= 50) {
+                    recommendedContainer.innerHTML += card;
+                }
+            });
+        }
+
+        window.onload = displayCandidates;
+
+    </script>
+
+</body>
+
+</html>

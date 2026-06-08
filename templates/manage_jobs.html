@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Jobs</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="sidebar">
+        <h2>AI HIRE</h2>
+        <a href="/recruiter_home.html">Home</a>
+        <a href="/recruiter_profile.html">Profile</a>
+        <a href="/post_job.html">Post Job</a>
+        <a href="/manage_jobs.html">Manage Jobs</a>
+        <a href="/send_notifications.html">Send Notifications</a>
+        <a href="/recruiter_dashboard.html">Dashboard</a>
+        <a href="#" onclick="logout()">Logout</a>
+    </div>
+
+    <div class="main-content">
+        <h2>Your Posted Jobs</h2>
+        <div id="jobsList" style="display:flex;flex-direction:column;gap:12px;"></div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        async function loadJobs() {
+            const list = document.getElementById('jobsList');
+            list.innerHTML = 'Loading...';
+            try {
+                const res = await fetchWithAuth('/recruiter/jobs');
+                const jobs = await res.json();
+                if (!res.ok) throw new Error(jobs.error || 'Failed to load jobs');
+
+                if (!jobs.length) {
+                    list.innerHTML = '<p>No jobs posted yet.</p>';
+                    return;
+                }
+
+                list.innerHTML = jobs.map(job => `
+                    <div class="card" style="padding:16px;">
+                        <h3>${job.title}</h3>
+                        <p>${job.company} - ${job.location}</p>
+                        <p>${(job.description || '').slice(0, 140)}</p>
+                        <button class="btn" onclick="viewApplicants('${job._id}')">View Applicants</button>
+                    </div>
+                `).join('');
+            } catch (err) {
+                list.innerHTML = `<p>${err.message}</p>`;
+            }
+        }
+
+        function viewApplicants(jobId) {
+            window.location.href = `/applicants.html?job_id=${jobId}`;
+        }
+
+        loadJobs();
+    </script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Seeker Register</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { height: 100vh; background: #1D0936; color: white; }
+        .container { height: 100vh; display: flex; justify-content: center; align-items: center; }
+        .card { width: 440px; padding: 32px; border-radius: 20px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 40px rgba(99,102,241,0.2); }
+        h2 { font-size: 26px; margin-bottom: 8px; }
+        p { font-size: 14px; color: #94a3b8; margin-bottom: 16px; }
+        input, select, textarea { width: 100%; margin-bottom: 16px; border-radius: 10px; padding: 12px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: white; outline: none; }
+        textarea { resize: none; }
+        .primary-btn { width: 100%; height: 46px; border: none; border-radius: 12px; background: linear-gradient(90deg, #6366f1, #8b5cf6); color: white; cursor: pointer; font-weight: bold; }
+        .error { color: #ef4444; font-size: 12px; margin-bottom: 12px; display: none; }
+        option{
+            color: black;
+        }
+    </style>
+</head>
+<body>
+     <br><center><h2>Job Seeker Registration</h2></center><br>
+    <div class="container">
+        <div class="card">
+            <h2>Create Your Profile</h2>
+            <p>Start your AI-powered career journey</p>
+            <form onsubmit="registerUser(event)">
+                <input type="text" id="name" placeholder="Full Name" autocomplete="name" required>
+                <input type="email" id="email" placeholder="Email" autocomplete="username" required>
+                <input type="password" id="password" placeholder="Password" minlength="6" autocomplete="new-password" required>
+                <textarea id="skills" placeholder="Skills (comma separated, e.g., html, css, javascript)" autocomplete="off"></textarea>
+                <select id="experience" autocomplete="off">
+                    <option value="">Experience Level</option>
+                    <option>Fresher</option>
+                    <option>1-3 Years</option>
+                    <option>3+ Years</option>
+                </select>
+                <div id="error" class="error"></div>
+                <button type="submit" class="primary-btn">Register</button>
+                <div style="text-align: center; margin-top: 16px;">
+                    <p style="margin-bottom: 12px; color: #94a3b8;">Already have an account? <a href="login.html" style="color: #6366f1; text-decoration: none; font-weight: bold;">Login</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        const API_URL = '/api';
+        
+        async function registerUser(event) {
+            event.preventDefault();
+            const name = document.getElementById("name").value.trim();
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value.trim();
+            const skills = document.getElementById("skills").value.trim();
+            const experience = document.getElementById("experience").value;
+            const errorDiv = document.getElementById("error");
+            
+            if (!name || !email || !password || !experience) {
+                errorDiv.textContent = "Please fill all required fields!";
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (password.length < 6) {
+                errorDiv.textContent = "Password must be at least 6 characters long.";
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password, role: 'jobseeker', skills, experience })
+                });
+                
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error);
+                
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                alert('Registration successful!');
+                window.location.href = "jobseeker_profile.html";
+            } catch (err) {
+                errorDiv.textContent = err.message;
+                errorDiv.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

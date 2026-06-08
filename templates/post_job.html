@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Post a Job</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="sidebar">
+        <h2>AI HIRE</h2>
+        <a href="/recruiter_home.html">Home</a>
+        <a href="/recruiter_profile.html">Profile</a>
+        <a href="/post_job.html">Post Job</a>
+        <a href="/manage_jobs.html">Manage Jobs</a>
+        <a href="/recruiter_dashboard.html">Dashboard</a>
+        <a href="#" onclick="logout()">Logout</a>
+    </div>
+    <div class="main-content">
+        <h2>Post a New Job</h2>
+        <form id="postJobForm" style="max-width:600px">
+            <input type="text" id="title" placeholder="Job Title" required>
+            <input type="text" id="company" placeholder="Company Name" required>
+            <input type="text" id="location" placeholder="Location" required>
+            <textarea id="description" placeholder="Job Description" rows="4" required></textarea>
+            <input type="text" id="skills" placeholder="Required Skills (comma separated)" required>
+            <button type="submit" class="btn">Post Job</button>
+        </form>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+        document.getElementById('postJobForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const job = {
+                title: document.getElementById('title').value,
+                company: document.getElementById('company').value,
+                location: document.getElementById('location').value,
+                description: document.getElementById('description').value,
+                skills: document.getElementById('skills').value
+            };
+            
+            const res = await fetchWithAuth('/jobs', { method: 'POST', body: JSON.stringify(job) });
+            if (res.ok) {
+                alert('Job posted!');
+                window.location.href = '/manage_jobs.html';
+            } else {
+                const err = await res.json();
+                alert(err.error);
+            }
+        });
+    </script>
+</body>
+</html>

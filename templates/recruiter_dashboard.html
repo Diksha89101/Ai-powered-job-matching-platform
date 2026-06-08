@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recruiter Dashboard</title>
+    <style>
+          /* RESET */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* BODY */
+body {
+    display: flex;
+    height: 100vh;
+    background:  #1D0936;
+    color: white;
+}
+
+/* SIDEBAR */
+.sidebar {
+    width: 240px;
+    padding: 24px;
+    background: rgba(255,255,255,0.04);
+    border-right: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar h2 {
+    margin-bottom: 30px;
+}
+
+.sidebar a {
+    display: block;
+    margin: 12px 0;
+    padding: 10px;
+    border-radius: 8px;
+    color: #cbd5f5;
+    text-decoration: none;
+}
+
+.sidebar a:hover {
+    background: rgba(99,102,241,0.2);
+}
+
+/* MAIN */
+.main {
+    flex: 1;
+    padding: 24px 40px;
+}
+
+/* TOPBAR */
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+}
+
+/* BUTTON */
+.btn {
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 0 15px rgba(99,102,241,0.5);
+}
+
+/* SECTION */
+.section {
+    margin-top: 10px;
+}
+
+/* JOB CARD */
+.job-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* JOB INFO */
+.job-info h4 {
+    margin-bottom: 4px;
+}
+
+.job-info p {
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+/* MINI CIRCLE */
+.mini-circle {
+    position: relative;
+    width: 100px;
+    height: 100px;
+}
+
+.mini-circle svg {
+    transform: rotate(-90deg);
+}
+
+/* SVG STYLES */
+.bg {
+    fill: none;
+    stroke: rgba(255,255,255,0.1);
+    stroke-width: 8;
+}
+
+.progress {
+    fill: none;
+    stroke: #6366f1;
+    stroke-width: 8;
+    stroke-linecap: round;
+}
+
+/* TEXT INSIDE CIRCLE */
+.mini-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 16px;
+    font-weight: bold;
+}
+    </style>
+</head>
+
+<body>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <h2>AI HIRE</h2>
+        <a href="/recruiter_profile.html">Profile</a>
+        <a href="/recruiter_dashboard.html">Dashboard</a>
+        <a href="/post_job.html">Post Job</a>
+        <a href="javascript:void(0)" onclick="logout()">Logout</a>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+        <div class="topbar">
+            <h2>All Applicants 👋</h2>
+            <button class="btn" onclick="go('/post_job.html')">Post New Job</button>
+        </div>
+
+        <!-- APPLICANTS LIST -->
+        <div class="section">
+            <h3>Applicants Matching</h3>
+            <div id="applicantList"></div>
+        </div>
+
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        function go(path) {
+            window.location.href = path;
+        }
+
+        function renderApplicants(applicants) {
+            const container = document.getElementById('applicantList');
+            container.innerHTML = '';
+
+            if (!applicants.length) {
+                container.innerHTML = '<div class="job-card"><div class="job-info"><h4>No applicants yet</h4><p>Post jobs to start receiving applications.</p></div></div>';
+                return;
+            }
+
+            applicants.forEach((app, index) => {
+                const div = document.createElement('div');
+                div.className = 'job-card';
+
+                const matchPercentage = app.matchPercentage || 0;
+
+                div.innerHTML = `
+                    <div class="job-info">
+                        <h4>${app.seeker.name}</h4>
+                        <p>Applied for: ${app.job_title}</p>
+                        <p>Skills: ${app.seeker.skills || 'Not specified'}</p>
+                        <p>Status: ${app.status || 'Applied'}</p>
+                    </div>
+
+                    <div class="mini-circle">
+                        <svg width="100" height="100">
+                            <circle cx="50" cy="50" r="40" class="bg"></circle>
+                            <circle cx="50" cy="50" r="40" class="progress" id="appProgress${index}"></circle>
+                        </svg>
+                        <div class="mini-text">${matchPercentage}%</div>
+                    </div>
+                `;
+
+                container.appendChild(div);
+
+                // Set the progress circle
+                setMiniProgress(`appProgress${index}`, matchPercentage);
+            });
+        }
+
+        function setMiniProgress(id, value) {
+            const circle = document.getElementById(id);
+            if (!circle) return;
+            const radius = 40;
+            const circumference = 2 * Math.PI * radius;
+
+            circle.style.strokeDasharray = circumference;
+            const offset = circumference - (value / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
+        }
+
+        async function loadRecruiterDashboard() {
+            const user = getUser();
+            if (!user) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            try {
+                const response = await fetchWithAuth('/recruiter/applicants');
+                if (!response.ok) {
+                    let message = `Server error ${response.status}`;
+                    try {
+                        const body = await response.json();
+                        message = body.error || body.message || message;
+                    } catch (err) {
+                        // ignore invalid JSON response
+                    }
+                    throw new Error(message);
+                }
+                const applicants = await response.json();
+                renderApplicants(applicants);
+            } catch (error) {
+                const container = document.getElementById('applicantList');
+                container.innerHTML = `<div class="job-card"><div class="job-info"><h4>Error loading applicants</h4><p>${error.message}</p></div></div>`;
+            }
+        }
+
+        window.onload = loadRecruiterDashboard;
+    </script>
+</body>
+
+</html>

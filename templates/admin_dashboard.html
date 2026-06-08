@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { display: flex; height: 100vh; background: #1D0936; color: white; }
+        .sidebar { width: 260px; padding: 24px; background: rgba(255,255,255,0.04); border-right: 1px solid rgba(255,255,255,0.1); overflow-y: auto; }
+        .sidebar h2 { margin-bottom: 30px; color: #6366f1; }
+        .sidebar a { display: block; margin: 12px 0; padding: 10px 14px; border-radius: 8px; color: #cbd5f5; text-decoration: none; cursor: pointer; transition: 0.2s; }
+        .sidebar a:hover, .sidebar a.active { background: rgba(99,102,241,0.2); color: white; }
+        .main { flex: 1; padding: 24px 40px; overflow-y: auto; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .topbar h2 { font-size: 24px; }
+        .admin-badge { background: linear-gradient(90deg, #6366f1, #8b5cf6); padding: 6px 14px; border-radius: 20px; font-size: 12px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 30px; }
+        .stat-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
+        .stat-card h3 { font-size: 28px; color: #6366f1; margin-bottom: 4px; }
+        .stat-card p { font-size: 13px; color: #94a3b8; }
+        .section { display: none; margin-bottom: 30px; }
+        .section.active { display: block; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .section-title { font-size: 18px; color: #cbd5f5; }
+        .data-table { width: 100%; border-collapse: collapse; background: rgba(255,255,255,0.03); border-radius: 12px; overflow: hidden; }
+        .data-table th, .data-table td { padding: 12px 16px; text-align: left; font-size: 13px; }
+        .data-table th { background: rgba(99,102,241,0.15); color: #cbd5f5; font-weight: 500; }
+        .data-table tr { border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .data-table tr:hover { background: rgba(255,255,255,0.03); }
+        .data-table td { color: #94a3b8; }
+        .btn { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; transition: 0.2s; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-toggle { background: #22c55e; color: white; }
+        .btn-toggle.inactive { background: #ef4444; }
+        .badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; }
+        .badge-active { background: rgba(34,197,94,0.15); color: #22c55e; }
+        .badge-inactive { background: rgba(239,68,68,0.15); color: #ef4444; }
+        .badge-applied { background: rgba(99,102,241,0.15); color: #6366f1; }
+        .badge-reviewed { background: rgba(168,85,247,0.15); color: #a855f7; }
+        .badge-shortlisted { background: rgba(234,179,8,0.15); color: #eab308; }
+        .badge-interviewed { background: rgba(56,189,248,0.15); color: #38bdf8; }
+        .badge-offered { background: rgba(34,197,94,0.15); color: #22c55e; }
+        .badge-hired { background: rgba(21,128,61,0.15); color: #16a34a; }
+        .badge-rejected { background: rgba(239,68,68,0.15); color: #ef4444; }
+        .loading { color: #94a3b8; text-align: center; padding: 40px; }
+        .error-msg { color: #ef4444; text-align: center; padding: 20px; }
+        .recent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .recent-card { background: rgba(255,255,255,0.03); padding: 16px; border-radius: 12px; }
+        .recent-card h4 { color: #6366f1; margin-bottom: 12px; font-size: 14px; }
+        .recent-item { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; color: #94a3b8; }
+        .recent-item:last-child { border-bottom: none; }
+        .pipeline-container { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 30px; }
+        .pipeline-stage { flex: 1; min-width: 120px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; text-align: center; position: relative; }
+        .pipeline-stage::after { content: '→'; position: absolute; right: -18px; top: 50%; transform: translateY(-50%); color: #6366f1; font-size: 18px; }
+        .pipeline-stage:last-child::after { display: none; }
+        .pipeline-stage h4 { font-size: 24px; color: #6366f1; margin-bottom: 6px; }
+        .pipeline-stage p { font-size: 12px; color: #94a3b8; }
+        .log-item { background: rgba(255,255,255,0.03); padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #6366f1; display: flex; justify-content: space-between; align-items: center; }
+        .log-action { color: #cbd5f5; font-size: 13px; }
+        .log-time { color: #94a3b8; font-size: 11px; }
+        .log-entity { background: rgba(99,102,241,0.15); color: #6366f1; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 8px; }
+        .time-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+        .time-card { background: rgba(255,255,255,0.03); padding: 16px; border-radius: 12px; }
+        .time-card h5 { color: #94a3b8; font-size: 12px; margin-bottom: 8px; }
+        .time-card .metric { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+        .status-select { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 4px 8px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+        .status-select option { color: black; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>ADMIN</h2>
+        <a class="active" onclick="showSection('overview')">Overview</a>
+        <a onclick="showSection('process')">Process Pipeline</a>
+        <a onclick="showSection('users')">Users</a>
+        <a onclick="showSection('jobs')">Jobs</a>
+        <a onclick="showSection('applications')">Applications</a>
+        <a onclick="showSection('activity')">Activity Logs</a>
+        <a href="#" onclick="logout()">Logout</a>
+    </div>
+    <div class="main">
+        <div class="topbar">
+            <h2>Admin Dashboard</h2>
+            <span class="admin-badge">ADMIN PANEL</span>
+        </div>
+
+        <div id="overview" class="section active">
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card"><h3>--</h3><p>Total Users</p></div>
+                <div class="stat-card"><h3>--</h3><p>Job Seekers</p></div>
+                <div class="stat-card"><h3>--</h3><p>Recruiters</p></div>
+                <div class="stat-card"><h3>--</h3><p>Total Jobs</p></div>
+                <div class="stat-card"><h3>--</h3><p>Applications</p></div>
+                <div class="stat-card"><h3>--</h3><p>Admins</p></div>
+            </div>
+            <div class="recent-grid" id="recentGrid">
+                <div class="recent-card">
+                    <h4>Recent Users</h4>
+                    <div id="recentUsers">Loading...</div>
+                </div>
+                <div class="recent-card">
+                    <h4>Recent Jobs</h4>
+                    <div id="recentJobs">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="process" class="section">
+            <div class="section-header">
+                <h3 class="section-title">Full Program Process Pipeline</h3>
+            </div>
+            <div class="pipeline-container" id="pipelineContainer">
+                <div class="pipeline-stage"><h4>--</h4><p>Applied</p></div>
+                <div class="pipeline-stage"><h4>--</h4><p>Reviewed</p></div>
+                <div class="pipeline-stage"><h4>--</h4><p>Shortlisted</p></div>
+                <div class="pipeline-stage"><h4>--</h4><p>Interviewed</p></div>
+                <div class="pipeline-stage"><h4>--</h4><p>Offered</p></div>
+                <div class="pipeline-stage"><h4>--</h4><p>Hired</p></div>
+                <div class="pipeline-stage"><h4>--</h4><p>Rejected</p></div>
+            </div>
+            <h3 style="color:#cbd5f5;margin-bottom:16px;font-size:16px;">Activity Trends</h3>
+            <div class="time-grid" id="timeGrid">
+                <div class="time-card"><h5>Today</h5><div class="metric"><span>Users</span><span>--</span></div><div class="metric"><span>Jobs</span><span>--</span></div><div class="metric"><span>Applications</span><span>--</span></div></div>
+                <div class="time-card"><h5>This Week</h5><div class="metric"><span>Users</span><span>--</span></div><div class="metric"><span>Jobs</span><span>--</span></div><div class="metric"><span>Applications</span><span>--</span></div></div>
+                <div class="time-card"><h5>This Month</h5><div class="metric"><span>Users</span><span>--</span></div><div class="metric"><span>Jobs</span><span>--</span></div><div class="metric"><span>Applications</span><span>--</span></div></div>
+            </div>
+            <div class="recent-grid" style="margin-top:20px;">
+                <div class="recent-card"><h4>Top Jobs by Applications</h4><div id="topJobs">Loading...</div></div>
+                <div class="recent-card"><h4>Top Recruiters</h4><div id="topRecruiters">Loading...</div></div>
+            </div>
+        </div>
+
+        <div id="users" class="section">
+            <div class="section-header"><h3 class="section-title">All Users</h3></div>
+            <div id="usersTableContainer"><p class="loading">Loading users...</p></div>
+        </div>
+
+        <div id="jobs" class="section">
+            <div class="section-header"><h3 class="section-title">All Jobs</h3></div>
+            <div id="jobsTableContainer"><p class="loading">Loading jobs...</p></div>
+        </div>
+
+        <div id="applications" class="section">
+            <div class="section-header"><h3 class="section-title">All Applications - Authorization Control</h3></div>
+            <div id="applicationsTableContainer"><p class="loading">Loading applications...</p></div>
+        </div>
+
+        <div id="activity" class="section">
+            <div class="section-header">
+                <h3 class="section-title">System Activity Logs</h3>
+                <select class="status-select" id="logFilter" onchange="loadActivityLogs()">
+                    <option value="">All Types</option>
+                    <option value="user">Users</option>
+                    <option value="job">Jobs</option>
+                    <option value="application">Applications</option>
+                </select>
+            </div>
+            <div id="activityLogsContainer"><p class="loading">Loading activity logs...</p></div>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        async function checkAuth() {
+            const user = getUser();
+            if (!user || user.role !== 'admin') {
+                window.location.href = '/login.html';
+                return false;
+            }
+            return true;
+        }
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+            event.target.classList.add('active');
+            if (sectionId === 'users') loadUsers();
+            if (sectionId === 'jobs') loadJobs();
+            if (sectionId === 'applications') loadApplications();
+            if (sectionId === 'activity') loadActivityLogs();
+            if (sectionId === 'process') loadProcess();
+        }
+
+        async function loadSummary() {
+            try {
+                const res = await fetchWithAuth('/admin/summary');
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                const stats = [
+                    { value: data.totalUsers, label: 'Total Users' },
+                    { value: data.jobseekers, label: 'Job Seekers' },
+                    { value: data.recruiters, label: 'Recruiters' },
+                    { value: data.jobs, label: 'Total Jobs' },
+                    { value: data.applications, label: 'Applications' },
+                    { value: data.admins, label: 'Admins' }
+                ];
+                document.getElementById('statsGrid').innerHTML = stats.map(s => `<div class="stat-card"><h3>${s.value}</h3><p>${s.label}</p></div>`).join('');
+                document.getElementById('recentUsers').innerHTML = (data.recentUsers || []).map(u => `<div class="recent-item">${u.name} <span style="color:#6366f1">(${u.role})</span></div>`).join('') || '<div class="recent-item">No recent users</div>';
+                document.getElementById('recentJobs').innerHTML = (data.recentJobs || []).map(j => `<div class="recent-item">${j.title} <span style="color:#6366f1">at ${j.company}</span></div>`).join('') || '<div class="recent-item">No recent jobs</div>';
+            } catch (err) {
+                document.getElementById('statsGrid').innerHTML = `<p class="error-msg">${err.message}</p>`;
+            }
+        }
+
+        async function loadProcess() {
+            try {
+                const res = await fetchWithAuth('/admin/process');
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                const p = data.pipeline;
+                const stages = [
+                    { key: 'applied', label: 'Applied' },
+                    { key: 'reviewed', label: 'Reviewed' },
+                    { key: 'shortlisted', label: 'Shortlisted' },
+                    { key: 'interviewed', label: 'Interviewed' },
+                    { key: 'offered', label: 'Offered' },
+                    { key: 'hired', label: 'Hired' },
+                    { key: 'rejected', label: 'Rejected' }
+                ];
+                document.getElementById('pipelineContainer').innerHTML = stages.map(s => `<div class="pipeline-stage"><h4>${p[s.key] || 0}</h4><p>${s.label}</p></div>`).join('');
+                const ts = data.timeSeries;
+                document.getElementById('timeGrid').innerHTML = `
+                    <div class="time-card"><h5>Today</h5><div class="metric"><span>Users</span><span>${ts.today.users}</span></div><div class="metric"><span>Jobs</span><span>${ts.today.jobs}</span></div><div class="metric"><span>Applications</span><span>${ts.today.applications}</span></div></div>
+                    <div class="time-card"><h5>This Week</h5><div class="metric"><span>Users</span><span>${ts.thisWeek.users}</span></div><div class="metric"><span>Jobs</span><span>${ts.thisWeek.jobs}</span></div><div class="metric"><span>Applications</span><span>${ts.thisWeek.applications}</span></div></div>
+                    <div class="time-card"><h5>This Month</h5><div class="metric"><span>Users</span><span>${ts.thisMonth.users}</span></div><div class="metric"><span>Jobs</span><span>${ts.thisMonth.jobs}</span></div><div class="metric"><span>Applications</span><span>${ts.thisMonth.applications}</span></div></div>`;
+                document.getElementById('topJobs').innerHTML = (data.topJobs || []).map(j => `<div class="recent-item">${j.title} <span style="color:#6366f1">(${j.application_count} apps)</span></div>`).join('') || '<div class="recent-item">No data yet</div>';
+                document.getElementById('topRecruiters').innerHTML = (data.topRecruiters || []).map(r => `<div class="recent-item">${r.name} <span style="color:#6366f1">(${r.job_count} jobs)</span></div>`).join('') || '<div class="recent-item">No data yet</div>';
+            } catch (err) {
+                document.getElementById('pipelineContainer').innerHTML = `<p class="error-msg">${err.message}</p>`;
+            }
+        }
+
+        async function loadUsers() {
+            const container = document.getElementById('usersTableContainer');
+            container.innerHTML = '<p class="loading">Loading users...</p>';
+            try {
+                const res = await fetchWithAuth('/admin/users');
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                container.innerHTML = `<table class="data-table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Location</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead><tbody>${data.map(u => `<tr><td style="color:#cbd5f5;font-weight:500">${u.name || 'N/A'}</td><td>${u.email || 'N/A'}</td><td><span style="color:${u.role==='admin'?'#8b5cf6':u.role==='recruiter'?'#f59e0b':'#6366f1'}">${u.role}</span></td><td>${u.location || 'N/A'}</td><td><span class="badge ${u.is_active!==false?'badge-active':'badge-inactive'}">${u.is_active!==false?'Active':'Disabled'}</span></td><td>${u.created_at ? new Date(u.created_at).toLocaleDateString() : 'N/A'}</td><td>${u.role !== 'admin' ? `<button class="btn btn-toggle ${u.is_active===false?'inactive':''}" onclick="toggleUser('${u._id}', ${u.is_active!==false})">${u.is_active!==false?'Disable':'Enable'}</button>` : '<span style="color:#94a3b8;font-size:12px">Protected</span>'}</td></tr>`).join('')}</tbody></table>`;
+            } catch (err) {
+                container.innerHTML = `<p class="error-msg">${err.message}</p>`;
+            }
+        }
+
+        async function loadJobs() {
+            const container = document.getElementById('jobsTableContainer');
+            container.innerHTML = '<p class="loading">Loading jobs...</p>';
+            try {
+                const res = await fetchWithAuth('/admin/jobs');
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                container.innerHTML = `<table class="data-table"><thead><tr><th>Title</th><th>Company</th><th>Location</th><th>Recruiter</th><th>Posted</th><th>Actions</th></tr></thead><tbody>${data.map(j => `<tr><td style="color:#cbd5f5;font-weight:500">${j.title || 'N/A'}</td><td>${j.company || 'N/A'}</td><td>${j.location || 'N/A'}</td><td>${j.recruiter_name || 'N/A'}</td><td>${j.created_at ? new Date(j.created_at).toLocaleDateString() : 'N/A'}</td><td><button class="btn btn-danger" onclick="deleteJob('${j._id}')">Delete</button></td></tr>`).join('')}</tbody></table>`;
+            } catch (err) {
+                container.innerHTML = `<p class="error-msg">${err.message}</p>`;
+            }
+        }
+
+        async function loadApplications() {
+            const container = document.getElementById('applicationsTableContainer');
+            container.innerHTML = '<p class="loading">Loading applications...</p>';
+            try {
+                const res = await fetchWithAuth('/admin/applications');
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                container.innerHTML = `<table class="data-table"><thead><tr><th>Applicant</th><th>Job</th><th>Status</th><th>Applied Date</th><th>Authorize</th></tr></thead><tbody>${data.map(a => `<tr><td style="color:#cbd5f5">${a.applicant_name || 'N/A'}</td><td>${a.job_title || 'N/A'}</td><td><span class="badge badge-${a.status || 'applied'}">${(a.status || 'applied').toUpperCase()}</span></td><td>${a.applied_at ? new Date(a.applied_at).toLocaleDateString() : 'N/A'}</td><td><select class="status-select" onchange="updateApplicationStatus('${a._id}', this.value)"><option value="applied" ${(a.status||'applied')==='applied'?'selected':''}>Applied</option><option value="reviewed" ${a.status==='reviewed'?'selected':''}>Reviewed</option><option value="shortlisted" ${a.status==='shortlisted'?'selected':''}>Shortlisted</option><option value="interviewed" ${a.status==='interviewed'?'selected':''}>Interviewed</option><option value="offered" ${a.status==='offered'?'selected':''}>Offered</option><option value="hired" ${a.status==='hired'?'selected':''}>Hired</option><option value="rejected" ${a.status==='rejected'?'selected':''}>Rejected</option></select></td></tr>`).join('')}</tbody></table>`;
+            } catch (err) {
+                container.innerHTML = `<p class="error-msg">${err.message}</p>`;
+            }
+        }
+
+        async function loadActivityLogs() {
+            const container = document.getElementById('activityLogsContainer');
+            const filter = document.getElementById('logFilter').value;
+            container.innerHTML = '<p class="loading">Loading activity logs...</p>';
+            try {
+                const url = filter ? `/admin/activity-logs?entity_type=${filter}` : '/admin/activity-logs';
+                const res = await fetchWithAuth(url);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                if (data.length === 0) { container.innerHTML = '<p class="loading">No activity logs found.</p>'; return; }
+                container.innerHTML = data.map(log => `<div class="log-item"><div><span class="log-action">${formatAction(log.action)}</span><span class="log-entity">${log.entity_type}</span>${log.details && Object.keys(log.details).length > 0 ? `<span style="color:#94a3b8;font-size:11px;margin-left:8px">${JSON.stringify(log.details).substring(0, 60)}</span>` : ''}</div><span class="log-time">${log.created_at ? new Date(log.created_at).toLocaleString() : 'N/A'}</span></div>`).join('');
+            } catch (err) {
+                container.innerHTML = `<p class="error-msg">${err.message}</p>`;
+            }
+        }
+
+        function formatAction(action) { return action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()); }
+
+        async function toggleUser(userId, currentlyActive) {
+            try {
+                const res = await fetchWithAuth(`/admin/users/${userId}/status`, { method: 'PUT', body: JSON.stringify({ is_active: !currentlyActive }) });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                loadUsers(); loadSummary();
+            } catch (err) { alert(err.message); }
+        }
+
+        async function deleteJob(jobId) {
+            if (!confirm('Are you sure?')) return;
+            try {
+                const res = await fetchWithAuth(`/admin/jobs/${jobId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                loadJobs(); loadSummary();
+            } catch (err) { alert(err.message); }
+        }
+
+        async function updateApplicationStatus(applicationId, newStatus) {
+            try {
+                const res = await fetchWithAuth(`/admin/applications/${applicationId}/status`, { method: 'PUT', body: JSON.stringify({ status: newStatus }) });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                alert(data.message); loadApplications(); loadSummary();
+            } catch (err) { alert(err.message); }
+        }
+
+        window.onload = async function() {
+            if (await checkAuth()) loadSummary();
+        };
+    </script>
+</body>
+</html>

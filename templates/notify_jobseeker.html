@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications - Job Seeker</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #1D0936;
+            color: white;
+        }
+
+        /* NAVBAR */
+        .navbar {
+            height: 70px;
+            padding: 0 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(123, 92, 255, 0.9);
+        }
+
+        .navbar a {
+            color: white;
+            margin-left: 20px;
+            text-decoration: none;
+        }
+
+        /* CONTAINER */
+        .container {
+            padding: 40px;
+        }
+
+        /* TITLE */
+        h2 {
+            margin-bottom: 20px;
+        }
+
+        /* NOTIFICATION CARD */
+        .notification {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            transition: 0.3s;
+        }
+
+        .notification:hover {
+            transform: scale(1.02);
+        }
+
+        /* LEFT TEXT */
+        .text {
+            max-width: 75%;
+        }
+
+        .text h4 {
+            margin-bottom: 5px;
+        }
+
+        .text p {
+            font-size: 14px;
+            color: #ccc;
+        }
+
+        /* STATUS TAG */
+        .status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        /* STATUS COLORS */
+        .applied {
+            background: #3b82f6;
+        }
+
+        .shortlisted {
+            background: #22c55e;
+        }
+
+        .rejected {
+            background: #ef4444;
+        }
+
+        /* EMPTY STATE */
+        .empty {
+            text-align: center;
+            margin-top: 80px;
+            color: #aaa;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="navbar">
+        <div class="logo">AI JOB</div>
+        <nav>
+            <a href="#">Dashboard</a>
+            <a href="#">Profile</a>
+            <a href="#">Logout</a>
+        </nav>
+    </header>
+
+    <div class="container">
+
+        <h2>Your Notifications</h2>
+
+        <!-- Notification 1 -->
+        <div class="notification">
+            <div class="text">
+                <h4>Application Submitted</h4>
+                <p>You applied for Frontend Developer at Infosys</p>
+            </div>
+            <div class="status applied">Applied</div>
+        </div>
+
+        <!-- Notification 2 -->
+        <div class="notification">
+            <div class="text">
+                <h4>Shortlisted</h4>
+                <p>You are shortlisted for Data Analyst at TCS</p>
+            </div>
+            <div class="status shortlisted">Shortlisted</div>
+        </div>
+
+        <!-- Notification 3 -->
+        <div class="notification">
+            <div class="text">
+                <h4>Application Update</h4>
+                <p>Your application for UI Designer at Wipro was rejected</p>
+            </div>
+            <div class="status rejected">Rejected</div>
+        </div>
+
+        <!-- Empty State (use when no notifications) -->
+        <!--
+    <div class="empty">
+        <h3>No Notifications Yet</h3>
+        <p>Apply for jobs to get updates here</p>
+    </div>
+    -->
+
+    </div>
+
+</body>
+
+</html>

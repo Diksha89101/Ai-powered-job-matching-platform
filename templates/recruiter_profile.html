@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Recruiter Profile</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="sidebar">
+        <h2>AI HIRE</h2>
+        <a href="/recruiter_home.html">Home</a>
+        <a href="/recruiter_profile.html">Profile</a>
+        <a href="/post_job.html">Post Job</a>
+        <a href="/recruiter_dashboard.html">Dashboard</a>
+        <a href="/manage_jobs.html">Manage Jobs</a>
+        <a href="#" onclick="logout()">Logout</a>
+    </div>
+    <div class="main-content">
+        <h2>Company Profile</h2>
+        <div style="display: flex; gap: 30px; margin-bottom: 30px;">
+            <div>
+                <img id="avatar" src="/static/uploads/default.png" class="avatar">
+                <label class="upload-btn">
+                    Change Logo
+                    <input type="file" id="photoInput" accept="image/*" style="display:none">
+                </label>
+            </div>
+        </div>
+        <form id="profileForm" style="max-width: 600px;">
+            <input type="text" id="company" placeholder="Company Name" required>
+            <input type="text" id="company_type" placeholder="Company Type">
+            <textarea id="location" placeholder="Company Location"></textarea>
+            <input type="text" id="website" placeholder="Website">
+            <textarea id="hiring_roles" placeholder="Hiring Roles"></textarea>
+            <input type="email" id="email" placeholder="Email" required>
+            <button type="submit" class="btn">Save Profile</button>
+        </form>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+        async function loadProfile() {
+            const res = await fetchWithAuth('/auth/me');
+            const data = await res.json();
+            document.getElementById('company').value = data.company || '';
+            document.getElementById('company_type').value = data.company_type || '';
+            document.getElementById('location').value = data.location || '';
+            document.getElementById('website').value = data.website || '';
+            document.getElementById('hiring_roles').value = data.hiring_roles || '';
+            document.getElementById('email').value = data.email || '';
+            if (data.profile_image) document.getElementById('avatar').src = data.profile_image;
+        }
+        
+        document.getElementById('photoInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append('profile_image', file);
+                await fetchWithAuth('/users/profile', { method: 'PUT', body: formData });
+                const reader = new FileReader();
+                reader.onload = (e) => document.getElementById('avatar').src = e.target.result;
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('company', document.getElementById('company').value);
+            formData.append('company_type', document.getElementById('company_type').value);
+            formData.append('location', document.getElementById('location').value);
+            formData.append('website', document.getElementById('website').value);
+            formData.append('hiring_roles', document.getElementById('hiring_roles').value);
+            formData.append('email', document.getElementById('email').value);
+            
+            const res = await fetchWithAuth('/users/profile', { method: 'PUT', body: formData });
+            if (res.ok) {
+                alert('Profile saved!');
+                window.location.href = '/recruiter_home.html';
+            }
+        });
+        
+        loadProfile();
+    </script>
+</body>
+</html>

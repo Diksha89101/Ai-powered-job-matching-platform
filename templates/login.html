@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Job Platform - Login</title>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { height: 100vh; background: #1D0936; color: white; }
+
+        .navbar {
+            height: 72px;
+            padding: 0 80px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar nav a {
+            margin-left: 32px;
+            font-size: 14px;
+            color: #cbd5f5;
+            text-decoration: none;
+        }
+
+        .container {
+            height: calc(100vh - 72px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toggle {
+            width: 420px;
+            height: 48px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.15);
+            display: flex;
+            padding: 4px;
+            margin-bottom: 32px;
+        }
+
+        .tab {
+            flex: 1;
+            border: none;
+            border-radius: 10px;
+            background: transparent;
+            color: #cbd5f5;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .tab.active {
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+
+        .card {
+            width: 440px;
+            padding: 32px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .form { display: none; flex-direction: column; }
+        .form.active { display: flex; }
+
+        h2 { text-align: center; margin-bottom: 16px; }
+
+        input {
+            height: 44px;
+            margin-bottom: 16px;
+            border-radius: 10px;
+            padding: 0 14px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.05);
+            color: white;
+        }
+
+        .primary-btn {
+            height: 46px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            color: white;
+            cursor: pointer;
+        }
+
+        .footer-text {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 13px;
+        }
+
+        .footer-text a {
+            color: #6366f1;
+            text-decoration: none;
+        }
+
+        .error {
+            color: #ef4444;
+            font-size: 12px;
+            margin-top: -8px;
+            margin-bottom: 12px;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="navbar">
+    <div>AI JOB</div>
+    <nav><a href="/landing.html">About</a></nav>
+</header>
+
+<div class="container">
+
+    <div class="toggle">
+        <button class="tab active" onclick="switchTab('job')">Job Seeker</button>
+        <button class="tab" onclick="switchTab('recruiter')">Recruiter</button>
+        <button class="tab" onclick="switchTab('admin')">Admin</button>
+    </div>
+
+    <div class="card">
+
+        <!-- Job Seeker -->
+        <form id="jobForm" class="form active" onsubmit="handleLogin(event, 'jobseeker')">
+            <h2>Job Seeker Login</h2>
+            <input type="email" id="jobEmail" placeholder="Email" autocomplete="username" required>
+            <input type="password" id="jobPass" placeholder="Password" autocomplete="current-password" required>
+            <div id="jobError" class="error"></div>
+            <button type="submit" class="primary-btn">Login</button>
+
+            <div class="footer-text">
+                <a href="forgot-password.html">Forgot Password?</a>
+            </div>
+
+            <div class="footer-text">
+                Don't have account? <a href="register_jobseeker.html">Register</a>
+            </div>
+        </form>
+
+        <!-- Recruiter -->
+        <form id="recruiterForm" class="form" onsubmit="handleLogin(event, 'recruiter')">
+            <h2>Recruiter Login</h2>
+            <input type="email" id="recEmail" placeholder="Recruiter Email" autocomplete="username" required>
+            <input type="password" id="recPass" placeholder="Password" autocomplete="current-password" required>
+            <div id="recError" class="error"></div>
+            <button type="submit" class="primary-btn">Login</button>
+
+            <div class="footer-text">
+                <a href="forgot-password.html">Forgot Password?</a>
+            </div>
+
+            <div class="footer-text">
+                Don't have account? <a href="register_recruiter.html">Register</a>
+            </div>
+        </form>
+
+        <!-- Admin -->
+        <form id="adminForm" class="form" onsubmit="handleLogin(event, 'admin')">
+            <h2>Admin Login</h2>
+            <input type="email" id="adminEmail" placeholder="Admin Email" autocomplete="username" required>
+            <input type="password" id="adminPass" placeholder="Admin Password" autocomplete="current-password" required>
+            <div id="adminError" class="error"></div>
+            <button type="submit" class="primary-btn">Login as Admin</button>
+            <div class="footer-text" style="font-size: 12px; color: #94a3b8; margin-top: 12px;">
+                Only authorized administrators can access this panel.
+            </div>
+        </form>
+
+    </div>
+</div>
+
+<script>
+
+    const API_URL = "/api";
+
+    function goBack() {
+        history.back();
+    }
+
+    function switchTab(type) {
+        document.getElementById("jobForm").classList.toggle("active", type === "job");
+        document.getElementById("recruiterForm").classList.toggle("active", type === "recruiter");
+        document.getElementById("adminForm").classList.toggle("active", type === "admin");
+
+        document.querySelectorAll(".tab").forEach(tab => tab.classList.remove("active"));
+
+        if (type === "job") {
+            document.querySelectorAll(".tab")[0].classList.add("active");
+        } else if (type === "recruiter") {
+            document.querySelectorAll(".tab")[1].classList.add("active");
+        } else {
+            document.querySelectorAll(".tab")[2].classList.add("active");
+        }
+    }
+
+    async function handleLogin(event, role) {
+        event.preventDefault();
+
+        const email = document.getElementById(
+            role === 'jobseeker' ? 'jobEmail' : role === 'recruiter' ? 'recEmail' : 'adminEmail'
+        ).value.trim();
+
+        const password = document.getElementById(
+            role === 'jobseeker' ? 'jobPass' : role === 'recruiter' ? 'recPass' : 'adminPass'
+        ).value.trim();
+
+        const errorDiv = document.getElementById(
+            role === 'jobseeker' ? 'jobError' : role === 'recruiter' ? 'recError' : 'adminError'
+        );
+
+        errorDiv.style.display = "none";
+
+        if (!email || !password) {
+            errorDiv.textContent = "Please fill all fields";
+            errorDiv.style.display = "block";
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/auth/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password, role })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) throw new Error(data.error);
+
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+
+            // Redirect
+            if (role === "jobseeker") {
+                window.location.href = "jobseeker_home.html";
+            } else if (role === "recruiter") {
+                window.location.href = "recruiter_home.html";
+            } else if (role === "admin") {
+                window.location.href = "admin_dashboard.html";
+            }
+
+        } catch (err) {
+            errorDiv.textContent = err.message;
+            errorDiv.style.display = "block";
+        }
+    }
+
+</script>
+
+</body>
+</html>

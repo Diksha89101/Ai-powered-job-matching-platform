@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Seeker Dashboard</title>
+    <style>
+        /* RESET */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* BODY */
+body {
+    display: flex;
+    height: 100vh;
+    background:  #1D0936;
+    color: white;
+}
+
+/* SIDEBAR */
+.sidebar {
+    width: 240px;
+    padding: 24px;
+    background: rgba(255,255,255,0.04);
+    border-right: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar h2 {
+    margin-bottom: 30px;
+}
+
+.sidebar a {
+    display: block;
+    margin: 12px 0;
+    padding: 10px;
+    border-radius: 8px;
+    color: #cbd5f5;
+    text-decoration: none;
+}
+
+.sidebar a:hover {
+    background: rgba(99,102,241,0.2);
+}
+
+/* MAIN */
+.main {
+    flex: 1;
+    padding: 24px 40px;
+}
+
+/* TOPBAR */
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+}
+
+/* BUTTON */
+.btn {
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 0 15px rgba(99,102,241,0.5);
+}
+
+/* SECTION */
+.section {
+    margin-top: 10px;
+}
+
+/* JOB CARD */
+.job-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* JOB INFO */
+.job-info h4 {
+    margin-bottom: 4px;
+}
+
+.job-info p {
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+/* MINI CIRCLE */
+.mini-circle {
+    position: relative;
+    width: 100px;
+    height: 100px;
+}
+
+.mini-circle svg {
+    transform: rotate(-90deg);
+}
+
+/* SVG STYLES */
+.bg {
+    fill: none;
+    stroke: rgba(255,255,255,0.1);
+    stroke-width: 8;
+}
+
+.progress {
+    fill: none;
+    stroke: #6366f1;
+    stroke-width: 8;
+    stroke-linecap: round;
+}
+
+/* TEXT INSIDE CIRCLE */
+.mini-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.job-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-left: 16px;
+}
+
+.job-actions button {
+    padding: 12px 22px;
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    min-width: 120px;
+    transition: transform 0.2s, background 0.2s, opacity 0.2s;
+}
+
+.btn-apply {
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    color: white;
+    box-shadow: 0 10px 20px rgba(99, 102, 241, 0.25);
+}
+
+.btn-apply:hover {
+    transform: translateY(-1px);
+    opacity: 0.95;
+}
+
+.btn-view {
+    background: transparent;
+    border: 1px solid #6366f1 !important;
+    color: #6366f1;
+}
+
+.btn-view:hover {
+    background: rgba(99, 102, 241, 0.2);
+}
+
+.btn-applied {
+    background: #22c55e;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 10px 20px rgba(34, 197, 94, 0.2);
+}
+
+.btn-applied:hover {
+    transform: translateY(-1px);
+    opacity: 0.95;
+}
+
+.btn-close {
+    background: #dc2626;
+    color: white;
+    border: none;
+    box-shadow: 0 10px 20px rgba(220, 38, 38, 0.25);
+}
+
+.btn-close:hover {
+    background: #b91c1c;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-content {
+    background: #2a1650;
+    padding: 24px;
+    border-radius: 16px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.modal-header h3 {
+    color: #6366f1;
+    margin: 0;
+}
+
+.modal-close {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.modal-close:hover {
+    color: white;
+}
+
+.modal-body p {
+    margin: 8px 0;
+    color: #cbd5f5;
+    font-size: 14px;
+}
+
+.modal-body .label {
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.modal-actions {
+    margin-top: 16px;
+    display: flex;
+    gap: 10px;
+}
+
+.apply-msg {
+    font-size: 12px;
+    margin-top: 4px;
+    min-height: 16px;
+}
+    </style>
+</head>
+
+<body>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <h2>AI JOB</h2>
+        <a href="seeker_dashboard.html">Dashboard</a>
+        <a href="jobseeker_home.html">Home</a>
+        <a href="/jobseeker_profile.html">My Profile</a>
+        <a href="/applied_jobs.html">Applied Jobs</a>
+        <a href="login.html" id="logout">Logout</a>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+        <!-- TOPBAR -->
+        <div class="topbar">
+            <h2>Welcome, <span id="welcomeName">User</span> 👋</h2>
+        </div>
+
+        <!-- JOB MATCH LIST -->
+        <div class="section">
+            <h3>Recommended Jobs</h3>
+            <div id="jobList"></div>
+        </div>
+
+    </div>
+
+    <!-- Job Details Modal -->
+    <div id="jobModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 id="modalTitle">Job Title</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Populated dynamically -->
+            </div>
+            <div class="modal-actions" id="modalActions">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        let currentJobsData = [];
+
+        async function loadUser() {
+            const user = getUser();
+            if (!user) {
+                window.location.href = '/login.html';
+                return;
+            }
+            document.getElementById('welcomeName').innerText = user.name;
+        }
+
+        async function loadRecommendedJobs() {
+            try {
+                const response = await fetchWithAuth('/jobs/recommended');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch recommended jobs');
+                }
+                const jobs = await response.json();
+                const filteredJobs = jobs.filter(job => (job.matchPercentage || 0) > 40);
+                currentJobsData = filteredJobs;
+                displayJobs(filteredJobs);
+            } catch (error) {
+                console.error('Error loading recommended jobs:', error);
+                document.getElementById('jobList').innerHTML = '<p style="color: #ff6b6b;">Error loading recommended jobs. Please try again later.</p>';
+            }
+        }
+
+        function displayJobs(jobs) {
+            const container = document.getElementById("jobList");
+            container.innerHTML = "";
+
+            if (jobs.length === 0) {
+                container.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 20px;">No recommended jobs found. Please update your profile and skills to get better recommendations.</p>';
+                return;
+            }
+
+            jobs.forEach((job, index) => {
+                const matchPercentage = job.matchPercentage || 0;
+
+                const div = document.createElement("div");
+                div.className = "job-card";
+                div.dataset.jobId = job._id;
+
+                const applyBtnClass = job.alreadyApplied ? 'btn-applied' : 'btn-apply';
+                const applyBtnText = job.alreadyApplied ? 'Applied' : 'Apply';
+
+                div.innerHTML = `
+                    <div class="mini-circle">
+                        <svg width="100" height="100">
+                            <circle cx="50" cy="50" r="40" class="bg"></circle>
+                            <circle cx="50" cy="50" r="40" class="progress" id="progress${index}"></circle>
+                        </svg>
+                        <div class="mini-text">${matchPercentage}%</div>
+                    </div>
+
+                    <div class="job-info" style="flex:1; margin-left: 16px;">
+                        <h4 id="title-${job._id}">${job.title} ${job.alreadyApplied ? '<span style="color: #22c55e; font-size: 12px;">(Applied)</span>' : ''}</h4>
+                        <p>${job.company} &bull; ${job.location || 'N/A'}</p>
+                    </div>
+
+                    <div class="job-actions">
+                        <button class="${applyBtnClass}" onclick="toggleApply('${job._id}', this)">${applyBtnText}</button>
+                        <button class="btn-view" onclick="viewJobDetails('${job._id}')">View</button>
+                        <div class="apply-msg" id="msg-${job._id}"></div>
+                    </div>
+                `;
+
+                container.appendChild(div);
+
+                setMiniProgress(`progress${index}`, matchPercentage);
+            });
+        }
+
+        function setMiniProgress(id, value) {
+            const circle = document.getElementById(id);
+            if (!circle) return;
+            
+            const radius = 40;
+            const circumference = 2 * Math.PI * radius;
+
+            circle.style.strokeDasharray = circumference;
+            const offset = circumference - (value / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
+        }
+
+        function setAppliedUI(jobId, applied) {
+            const job = currentJobsData.find(j => j._id === jobId);
+            if (job) job.alreadyApplied = applied;
+
+            // Update card button
+            const card = document.querySelector(`.job-card[data-job-id="${jobId}"]`);
+            if (card) {
+                const btn = card.querySelector('.job-actions button:first-child');
+                const titleEl = document.getElementById(`title-${jobId}`);
+                if (btn) {
+                    if (applied) {
+                        btn.textContent = 'Applied';
+                        btn.classList.remove('btn-apply');
+                        btn.classList.add('btn-applied');
+                    } else {
+                        btn.textContent = 'Apply';
+                        btn.classList.remove('btn-applied');
+                        btn.classList.add('btn-apply');
+                    }
+                }
+                if (titleEl) {
+                    const baseTitle = job.title;
+                    titleEl.innerHTML = applied
+                        ? `${baseTitle} <span style="color: #22c55e; font-size: 12px;">(Applied)</span>`
+                        : baseTitle;
+                }
+            }
+
+            // Update modal button if open
+            const modalApplyBtn = document.getElementById('modalApplyBtn');
+            if (modalApplyBtn && modalApplyBtn.dataset.jobId === jobId) {
+                if (applied) {
+                    modalApplyBtn.textContent = 'Applied';
+                    modalApplyBtn.classList.remove('btn-apply');
+                    modalApplyBtn.classList.add('btn-applied');
+                } else {
+                    modalApplyBtn.textContent = 'Apply Now';
+                    modalApplyBtn.classList.remove('btn-applied');
+                    modalApplyBtn.classList.add('btn-apply');
+                }
+            }
+        }
+
+        async function toggleApply(jobId, btnElement) {
+            const msgEl = document.getElementById(`msg-${jobId}`);
+            const job = currentJobsData.find(j => j._id === jobId);
+            const isApplied = job && job.alreadyApplied;
+
+            try {
+                if (isApplied) {
+                    const res = await fetchWithAuth(`/jobs/${jobId}/unapply`, { method: 'DELETE' });
+                    const data = await res.json();
+                    if (res.ok) {
+                        setAppliedUI(jobId, false);
+                        msgEl.style.color = '#94a3b8';
+                        msgEl.textContent = 'Application withdrawn.';
+                    } else {
+                        msgEl.style.color = '#ef4444';
+                        msgEl.textContent = data.error || 'Failed to withdraw';
+                    }
+                } else {
+                    const res = await fetchWithAuth(`/jobs/${jobId}/apply`, { method: 'POST' });
+                    const data = await res.json();
+                    if (res.ok) {
+                        setAppliedUI(jobId, true);
+                        msgEl.style.color = '#22c55e';
+                        msgEl.textContent = 'Application submitted!';
+                    } else {
+                        msgEl.style.color = '#ef4444';
+                        msgEl.textContent = data.error || 'Failed to apply';
+                    }
+                }
+            } catch (err) {
+                msgEl.style.color = '#ef4444';
+                msgEl.textContent = 'Network error';
+            }
+        }
+
+        function viewJobDetails(jobId) {
+            const job = currentJobsData.find(j => j._id === jobId);
+            if (!job) return;
+
+            document.getElementById('modalTitle').textContent = job.title;
+            document.getElementById('modalBody').innerHTML = `
+                <p><span class="label">Company:</span> ${job.company || 'N/A'}</p>
+                <p><span class="label">Location:</span> ${job.location || 'N/A'}</p>
+                <p><span class="label">Skills Required:</span> ${job.skills || 'N/A'}</p>
+                <p><span class="label">Match Score:</span> <span style="color: #6366f1; font-weight: 600;">${job.matchPercentage || 0}%</span></p>
+                <p><span class="label">Matched Skills:</span> ${(job.matchedSkills || []).join(', ') || 'None'}</p>
+                <p><span class="label">Missing Skills:</span> ${(job.missingSkills || []).join(', ') || 'None'}</p>
+                <hr style="border-color: rgba(255,255,255,0.1); margin: 12px 0;">
+                <p><span class="label">Description:</span></p>
+                <p>${job.description || 'No description available.'}</p>
+            `;
+
+            const alreadyApplied = job.alreadyApplied;
+            const applyBtnClass = alreadyApplied ? 'btn-applied' : 'btn-apply';
+            const applyBtnText = alreadyApplied ? 'Applied' : 'Apply Now';
+            const applyBtnDisabled = alreadyApplied ? 'disabled' : '';
+
+            document.getElementById('modalActions').innerHTML = `
+                <button id="modalApplyBtn" class="${applyBtnClass}" data-job-id="${jobId}" onclick="toggleApply('${jobId}', this)">${applyBtnText}</button>
+                <button class="btn-close" onclick="closeModal()">Close</button>
+            `;
+
+            document.getElementById('jobModal').classList.add('active');
+        }
+
+        function closeModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('jobModal').classList.remove('active');
+        }
+
+        // Load
+        window.onload = async function() {
+            await loadUser();
+            await loadRecommendedJobs();
+        };
+    </script>
+</body>
+
+</html>

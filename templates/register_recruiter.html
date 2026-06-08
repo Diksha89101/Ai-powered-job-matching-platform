@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recruiter Register</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { height: 100vh; background: #1D0936; color: white; }
+        .navbar { height: 72px; padding: 0 80px; display: flex; justify-content: space-between; align-items: center; }
+        .navbar nav a { margin-left: 32px; font-size: 14px; color: #cbd5f5; text-decoration: none; }
+        .container { height: calc(100vh - 72px); display: flex; justify-content: center; align-items: center; }
+        .card { width: 440px; padding: 32px; border-radius: 20px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 40px rgba(99,102,241,0.2); }
+        h2 { font-size: 26px; margin-bottom: 8px; }
+        p { font-size: 14px; color: #94a3b8; margin-bottom: 16px; }
+        input, textarea { width: 100%; margin-bottom: 16px; border-radius: 10px; padding: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: white; }
+        .primary-btn { width: 100%; height: 46px; border: none; border-radius: 12px; background: linear-gradient(90deg, #6366f1, #8b5cf6); color: white; cursor: pointer; }
+        .error { color: #ef4444; font-size: 12px; margin-bottom: 12px; display: none; }
+    </style>
+</head>
+<body>
+<header class="navbar">
+        <div class="logo">AI JOB</div>
+        <nav><a href="login.html">Login</a></nav>
+    </header>
+    <br>
+    <center><h2>Recruiter Registration</h2></center>
+    <div class="container">
+        <div class="card">
+            <h2>Hire Smarter with AI</h2>
+            <p>Find the perfect candidates faster</p>
+            <form onsubmit="registerRecruiter(event)">
+                <input type="text" id="company" placeholder="Company Name" autocomplete="organization" required>
+                <input type="text" id="name" placeholder="Recruiter Name" autocomplete="name" required>
+                <input type="email" id="email" placeholder="Email" autocomplete="username" required>
+                <input type="password" id="password" placeholder="Password" minlength="6" autocomplete="new-password" required>
+                <input type="text" id="website" placeholder="Company Website(Optional)" autocomplete="url">
+                <textarea id="location" placeholder="Company Location" autocomplete="address-level2" required></textarea>
+                <div id="error" class="error"></div>
+                <button type="submit" class="primary-btn">Register</button>
+                <div style="text-align: center; margin-top: 16px;">
+                    <p style="margin-bottom: 12px; color: #94a3b8;">Already have an account? <a href="login.html" style="color: #6366f1; text-decoration: none; font-weight: bold;">Login</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        const API_URL = '/api';
+        
+        async function registerRecruiter(event) {
+            event.preventDefault();
+            const company = document.getElementById("company").value.trim();
+            const name = document.getElementById("name").value.trim();
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value.trim();
+            const website = document.getElementById("website").value.trim();
+            const location = document.getElementById("location").value.trim();
+            const errorDiv = document.getElementById("error");
+            
+            if (!company || !name || !email || !password) {
+                errorDiv.textContent = "Please fill all required fields!";
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (password.length < 6) {
+                errorDiv.textContent = "Password must be at least 6 characters long.";
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password, role: 'recruiter', company, company_type: '', location, website, hiring_roles: '' })
+                });
+                
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error);
+                
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                alert('Registration successful!');
+                window.location.href = "recruiter_profile.html";
+            } catch (err) {
+                errorDiv.textContent = err.message;
+                errorDiv.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

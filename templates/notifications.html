@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="sidebar">
+        <h2>AI JOB</h2>
+        <a href="/jobseeker_home.html">Home</a>
+        <a href="/browse_jobs.html">Browse Jobs</a>
+        <a href="/applied_jobs.html">Applied Jobs</a>
+        <a href="/notifications.html">Notifications</a>
+        <a href="#" onclick="logout()">Logout</a>
+    </div>
+
+    <div class="main-content">
+        <h2>Your Notifications</h2>
+        <div id="notificationList" style="display:flex;flex-direction:column;gap:12px;"></div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        async function loadNotifications() {
+            const list = document.getElementById('notificationList');
+            list.innerHTML = 'Loading...';
+            try {
+                const res = await fetchWithAuth('/notifications');
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to load notifications');
+
+                if (!data.length) {
+                    list.innerHTML = '<p>No notifications yet.</p>';
+                    return;
+                }
+
+                list.innerHTML = data.map(n => `
+                    <div class="card" style="padding:16px;">
+                        <h3>${n.job_title || 'Update'}</h3>
+                        <p>${n.message}</p>
+                        <small>${new Date(n.created_at).toLocaleString()}</small>
+                    </div>
+                `).join('');
+            } catch (err) {
+                list.innerHTML = `<p>${err.message}</p>`;
+            }
+        }
+
+        loadNotifications();
+    </script>
+</body>
+</html>
