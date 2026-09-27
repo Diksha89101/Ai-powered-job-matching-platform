@@ -2,8 +2,9 @@ from flask import Flask, request, jsonify, render_template, send_from_directory,
 from flask_cors import CORS
 from flask_pymongo import PyMongo
 from flask_mail import Mail, Message
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from werkzeug.security import generate_password_hash, check_password_hash
-from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 import jwt
 import datetime
@@ -12,6 +13,9 @@ import re
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
 from functools import wraps
+from app.config import build_config
+from app.security import validate_password, safe_upload_name
+
 from utils.ai_matching import (
     build_candidate_profile,
     build_job_profile,
@@ -22,10 +26,7 @@ from utils.ai_matching import (
 load_dotenv(override=True)
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-change-this-in-production-test')
-app.config['MONGO_URI'] = os.getenv('MONGO_URI', 'mongodb://localhost:27017/jobplatform')
-app.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER', 'static/uploads')
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
+app.config.update(build_config())
 
 # Application thresholds
 MIN_MATCH_PERCENTAGE_TO_APPLY = int(os.getenv('MIN_MATCH_PERCENTAGE_TO_APPLY', 50))
@@ -59,7 +60,9 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 mongo = PyMongo(app)
 mail = Mail(app)
-CORS(app)
+limiter = Limiter(key_func=get_remote_address, app=app, default_limits=[])
+allowed_origins = [origin.strip() for origin in app.config.get('CORS_ORIGINS', '').split(',') if origin.strip()]
+CORS(app, resources={r'/api/*': {'origins': allowed_origins or []}})
 
 # Helper: convert ObjectId to string
 def serialize_doc(doc):
@@ -368,8 +371,9 @@ def register():
         return jsonify({'error': 'Email is required'}), 400
     if role not in {'jobseeker', 'recruiter'}:
         return jsonify({'error': 'Invalid role'}), 400
-    if len(password) < 6:
-        return jsonify({'error': 'Password must be at least 6 characters long'}), 400
+    valid_password, password_error = validate_password(password, app.config.get('PASSWORD_MIN_LENGTH', 8))
+    if not valid_password:
+        return jsonify({'error': password_error}), 400
     if find_user_by_email(email):
         return jsonify({'error': 'Email already exists'}), 400
     
@@ -455,6 +459,7 @@ def get_me():
     return jsonify(user)
 
 @app.route('/api/auth/forgot-password', methods=['POST'])
+@limiter.limit('5 per hour')
 def forgot_password():
     data = request.get_json(silent=True) or {}
     email = normalize_email(data.get('email'))
@@ -545,6 +550,7 @@ def verify_reset_token():
 
 
 @app.route('/api/auth/reset-password', methods=['POST'])
+@limiter.limit('10 per hour')
 def reset_password():
     data = request.get_json(silent=True) or {}
     token = data.get('token')
@@ -554,8 +560,9 @@ def reset_password():
         return jsonify({'error': 'Token is required'}), 400
     if not password:
         return jsonify({'error': 'Password is required'}), 400
-    if len(password) < 6:
-        return jsonify({'error': 'Password must be at least 6 characters long'}), 400
+    valid_password, password_error = validate_password(password, app.config.get('PASSWORD_MIN_LENGTH', 8))
+    if not valid_password:
+        return jsonify({'error': password_error}), 400
 
     try:
         payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
@@ -854,22 +861,24 @@ def update_profile():
     if 'profile_image' in request.files:
         file = request.files['profile_image']
         if file and file.filename:
-            if not has_allowed_extension(file.filename, {'.jpg', '.jpeg', '.png', '.gif'}):
+            safe_name = safe_upload_name(file.filename, {'.jpg', '.jpeg', '.png', '.gif'})
+            if not safe_name:
                 return jsonify({'error': 'Only JPG, JPEG, PNG, and GIF files are allowed for profile photos'}), 400
-            filename = secure_filename(f"{datetime.datetime.utcnow().timestamp()}_{file.filename}")
+            filename = f"{datetime.datetime.utcnow().timestamp()}_{safe_name}"
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            update_fields['profile_image'] = f'/static/uploads/{filename}'
+            update_fields['profile_image'] = f'/api/users/{request.current_user["_id"]}/profile-image/{filename}'
     
     # Handle resume upload
     if 'resume' in request.files:
         file = request.files['resume']
         if file and file.filename:
-            if not has_allowed_extension(file.filename, {'.pdf', '.doc', '.docx'}):
+            safe_name = safe_upload_name(file.filename, {'.pdf', '.doc', '.docx'})
+            if not safe_name:
                 return jsonify({'error': 'Only PDF, DOC, and DOCX files are allowed for resumes'}), 400
-            filename = secure_filename(f"{datetime.datetime.utcnow().timestamp()}_{file.filename}")
+            filename = f"{datetime.datetime.utcnow().timestamp()}_{safe_name}"
             saved_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(saved_path)
-            update_fields['resume'] = f'/static/uploads/{filename}'
+            update_fields['resume'] = f'/api/users/{request.current_user["_id"]}/resume/{filename}'
             if request.current_user.get('role') == 'jobseeker':
                 update_fields['resume_text'] = extract_resume_text(saved_path)
 
