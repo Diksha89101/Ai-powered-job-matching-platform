@@ -1,6 +1,7 @@
 import os
 import re
 import zipfile
+import math
 from typing import Dict, Iterable, List
 from xml.etree import ElementTree
 
@@ -23,6 +24,11 @@ try:
     from rapidocr_onnxruntime import RapidOCR
 except Exception:  # pragma: no cover - OCR is optional at runtime
     RapidOCR = None
+
+try:
+    from sentence_transformers import SentenceTransformer
+except Exception:  # pragma: no cover - semantic matching is optional until dependencies are installed
+    SentenceTransformer = None
 
 
 SKILL_ALIASES: Dict[str, List[str]] = {
@@ -158,6 +164,10 @@ def _pattern_for_phrase(phrase: str) -> re.Pattern:
 ALIAS_PATTERNS = [(_pattern_for_phrase(alias), canonical) for alias, canonical in ALIAS_TO_CANONICAL.items()]
 _NLP = None
 _OCR_ENGINE = None
+_EMBEDDING_MODEL = None
+_EMBEDDING_MODEL_NAME = os.getenv("SEMANTIC_MODEL_NAME", "all-MiniLM-L6-v2")
+SEMANTIC_WEIGHT = float(os.getenv("SEMANTIC_WEIGHT", "0.60"))
+KEYWORD_WEIGHT = float(os.getenv("KEYWORD_WEIGHT", "0.40"))
 
 
 def get_nlp():
@@ -176,6 +186,35 @@ def get_nlp():
         except Exception:
             _NLP = None
     return _NLP
+
+
+def get_embedding_model():
+    """Load the sentence-transformer model once and reuse it for matching."""
+    global _EMBEDDING_MODEL
+    if _EMBEDDING_MODEL is not None:
+        return _EMBEDDING_MODEL
+    if SentenceTransformer is None:
+        return None
+    try:
+        _EMBEDDING_MODEL = SentenceTransformer(_EMBEDDING_MODEL_NAME)
+    except Exception:
+        _EMBEDDING_MODEL = None
+    return _EMBEDDING_MODEL
+
+
+def semantic_similarity(candidate_text: str, job_text: str) -> float:
+    """Return cosine similarity between candidate and job embeddings as 0..1."""
+    if not candidate_text or not job_text:
+        return 0.0
+    model = get_embedding_model()
+    if model is None:
+        return 0.0
+    try:
+        embeddings = model.encode([candidate_text[:12000], job_text[:12000]], normalize_embeddings=True)
+        similarity = float(sum(a * b for a, b in zip(embeddings[0], embeddings[1])))
+        return max(0.0, min(1.0, similarity))
+    except Exception:
+        return 0.0
 
 
 def get_ocr_engine():
@@ -254,10 +293,12 @@ def extract_keywords_from_text(text: str) -> List[str]:
 def build_candidate_profile(skills_text: str = "", resume_text: str = "") -> Dict[str, List[str]]:
     manual_skills = normalize_skill_list(skills_text)
     resume_skills = extract_resume_skills_nlp(resume_text)
+    candidate_text = "\n".join(part for part in [skills_text, resume_text] if part).strip()
     return {
         "manual_skills": manual_skills,
         "resume_skills": resume_skills,
         "profile_keywords": resume_skills,
+        "semantic_text": candidate_text,
     }
 
 
@@ -266,15 +307,23 @@ def build_job_profile(skills_text: str = "", title: str = "", description: str =
     inferred_keywords = extract_keywords_from_text(" ".join([title or "", description or ""]))
     match_keywords = manual_skills or inferred_keywords
     searchable_keywords = dedupe_preserve_order(manual_skills + inferred_keywords)
+    job_text = "\n".join(part for part in [title, description, skills_text] if part).strip()
     return {
         "normalized_skills": manual_skills,
         "inferred_keywords": inferred_keywords,
         "match_keywords": match_keywords,
         "searchable_keywords": searchable_keywords,
+        "semantic_text": job_text,
     }
 
 
-def calculate_keyword_match(candidate_keywords: Iterable[str], match_keywords: Iterable[str], inferred_keywords: Iterable[str] = ()) -> Dict[str, object]:
+def calculate_keyword_match(
+    candidate_keywords: Iterable[str],
+    match_keywords: Iterable[str],
+    inferred_keywords: Iterable[str] = (),
+    candidate_text: str = "",
+    job_text: str = "",
+) -> Dict[str, object]:
     candidate_list = dedupe_preserve_order(candidate_keywords)
     scoring_keywords = dedupe_preserve_order(match_keywords)
     context_keywords = dedupe_preserve_order(inferred_keywords)
@@ -290,8 +339,23 @@ def calculate_keyword_match(candidate_keywords: Iterable[str], match_keywords: I
     total = len(scoring_keywords)
     match_percentage = int(round((len(matched_skills) / total) * 100)) if total else 0
 
+    semantic_similarity_score = semantic_similarity(candidate_text, job_text)
+    semantic_percentage = int(round(semantic_similarity_score * 100))
+
+    # Hybrid scoring keeps explicit skill overlap while adding semantic understanding.
+    # If embeddings are unavailable, the existing keyword score remains the fallback.
+    if candidate_text and job_text and get_embedding_model() is not None:
+        match_percentage = int(round(
+            (semantic_percentage * SEMANTIC_WEIGHT) +
+            (match_percentage * KEYWORD_WEIGHT)
+        ))
+        match_percentage = max(0, min(100, match_percentage))
+
     return {
         "matchPercentage": match_percentage,
+        "keywordMatchPercentage": int(round((len(matched_skills) / total) * 100)) if total else 0,
+        "semanticSimilarity": round(semantic_similarity_score, 4),
+        "semanticMatchPercentage": semantic_percentage,
         "matchedSkills": matched_skills,
         "missingSkills": missing_skills,
         "bonusKeywords": bonus_keywords,
