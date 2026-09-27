@@ -146,6 +146,39 @@ missingSkills: required matching skills not found in the candidate profile
 
 The numerical values above are response fields, not a benchmark result.
 
+## Security and Engineering Notes
+
+- Secrets are loaded from environment variables; there is no production fallback secret.
+- CORS is restricted through the CORS_ORIGINS environment variable instead of allowing every origin.
+- Login, password-reset requests, and password-reset submission are rate-limited.
+- Passwords require at least 8 characters plus uppercase, lowercase, and a number.
+- Resume files are stored outside the public static directory and are served through an authenticated backend endpoint.
+- Upload filenames are sanitized and validated by extension.
+- Frontend API data is escaped before being inserted into HTML in the main recruiter/seeker views.
+- Runtime logs and uploaded user data are excluded from Git.
+- The application keeps the existing Flask entry point while shared configuration, security, matching, and resume parsing responsibilities are being moved into dedicated modules.
+
+## Testing
+
+Run the automated tests with:
+
+```bash
+pytest -q
+```
+
+The test suite covers password validation, upload-name validation, skill alias normalization, keyword matching, and profile construction.
+
+GitHub Actions runs the test suite on pushes and pull requests.
+
+## Screenshots
+
+The repository includes existing UI assets under `static/images/`. Add current application screenshots here when publishing a final portfolio version, ideally covering:
+
+1. Job seeker dashboard and match scores
+2. Job browsing with matched/missing skills
+3. Recruiter applicant ranking
+4. Job posting workflow
+
 ## Development Notes
 
 - The semantic model is loaded lazily and cached in-process instead of being initialized for every comparison.
