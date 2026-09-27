@@ -1,7 +1,6 @@
 import os
 import re
 import zipfile
-import math
 from typing import Dict, Iterable, List
 from xml.etree import ElementTree
 
@@ -165,6 +164,7 @@ ALIAS_PATTERNS = [(_pattern_for_phrase(alias), canonical) for alias, canonical i
 _NLP = None
 _OCR_ENGINE = None
 _EMBEDDING_MODEL = None
+_EMBEDDING_LOAD_ATTEMPTED = False
 _EMBEDDING_MODEL_NAME = os.getenv("SEMANTIC_MODEL_NAME", "all-MiniLM-L6-v2")
 SEMANTIC_WEIGHT = float(os.getenv("SEMANTIC_WEIGHT", "0.60"))
 KEYWORD_WEIGHT = float(os.getenv("KEYWORD_WEIGHT", "0.40"))
@@ -190,11 +190,12 @@ def get_nlp():
 
 def get_embedding_model():
     """Load the sentence-transformer model once and reuse it for matching."""
-    global _EMBEDDING_MODEL
+    global _EMBEDDING_MODEL, _EMBEDDING_LOAD_ATTEMPTED
     if _EMBEDDING_MODEL is not None:
         return _EMBEDDING_MODEL
-    if SentenceTransformer is None:
+    if _EMBEDDING_LOAD_ATTEMPTED or SentenceTransformer is None:
         return None
+    _EMBEDDING_LOAD_ATTEMPTED = True
     try:
         _EMBEDDING_MODEL = SentenceTransformer(_EMBEDDING_MODEL_NAME)
     except Exception:
