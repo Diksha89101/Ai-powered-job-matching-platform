@@ -239,15 +239,15 @@
                 card.className = 'job-card';
                 card.innerHTML = `
                     <div class="job-info">
-                        <h4>${job.title}</h4>
-                        <p>${job.company} &middot; ${job.location || 'Location not specified'}</p>
-                        <p>${job.description ? `${job.description.substring(0, 100)}...` : 'No description provided.'}</p>
+                        <h4>${escapeHtml(job.title)}</h4>
+                        <p>${escapeHtml(job.company)} &middot; ${escapeHtml(job.location || 'Location not specified')}</p>
+                        <p>${job.description ? escapeHtml(job.description.substring(0, 100)) + '...' : 'No description provided.'}</p>
                         ${typeof job.matchPercentage === 'number' ? `<p><strong>AI Match:</strong> ${job.matchPercentage}%</p>` : ''}
-                        ${matchedSkills ? `<p><strong>Matched skills:</strong> ${matchedSkills}</p>` : ''}
-                        ${missingSkills ? `<p><strong>Missing skills:</strong> ${missingSkills}</p>` : ''}
+                        ${matchedSkills ? `<p><strong>Matched skills:</strong> ${escapeHtml(matchedSkills)}</p>` : ''}
+                        ${missingSkills ? `<p><strong>Missing skills:</strong> ${escapeHtml(missingSkills)}</p>` : ''}
                         ${lowMatch ? `<p style="color: #fde68a;"><strong>Minimum ${MIN_MATCH_PERCENTAGE_TO_APPLY}% match required to apply.</strong></p>` : ''}
                     </div>
-                    <button class="apply-btn" onclick="applyJob('${job._id}')" ${buttonDisabled} title="${buttonTitle}">
+                    <button class="apply-btn" onclick="applyJob('${escapeHtml(job._id)}')" ${buttonDisabled} title="${buttonTitle}">
                         ${buttonText}
                     </button>
                 `;
