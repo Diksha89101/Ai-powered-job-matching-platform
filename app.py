@@ -299,13 +299,13 @@ def ensure_admin_account():
 
 
 def get_saved_resume_text(user_doc):
-    resume_path = user_doc.get('resume', '')
-    if not resume_path.startswith('/static/'):
+    resume_url = user_doc.get('resume', '')
+    filename = os.path.basename(resume_url.rstrip('/'))
+    if not filename or filename != secure_filename(filename):
         return ''
 
-    relative_path = resume_path.lstrip('/').replace('/', os.sep)
-    file_path = os.path.join(app.root_path, relative_path)
-    if not os.path.exists(file_path):
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    if not os.path.isfile(file_path):
         return ''
 
     return extract_resume_text(file_path)
@@ -914,6 +914,35 @@ def update_profile():
     log_activity('profile_updated', 'user', request.current_user['_id'], {'fields': list(update_fields.keys())}, request.current_user['_id'])
     return jsonify({'message': 'Profile updated', **ai_payload})
 
+
+
+@app.route('/api/users/<user_id>/resume/<path:filename>', methods=['GET'])
+@token_required
+def download_resume(user_id, filename):
+    if str(request.current_user['_id']) != user_id and request.current_user.get('role') != 'recruiter' and request.current_user.get('role') != 'admin':
+        return jsonify({'error': 'Access denied'}), 403
+    safe_name = os.path.basename(filename)
+    if safe_name != secure_filename(safe_name):
+        return jsonify({'error': 'Invalid file name'}), 400
+    user = mongo.db.users.find_one({'_id': parse_object_id(user_id)})
+    if not user or user.get('resume', '').rstrip('/').split('/')[-1] != safe_name:
+        return jsonify({'error': 'Resume not found'}), 404
+    return send_from_directory(app.config['UPLOAD_FOLDER'], safe_name, as_attachment=True)
+
+
+@app.route('/api/users/<user_id>/profile-image/<path:filename>', methods=['GET'])
+@token_required
+def download_profile_image(user_id, filename):
+    if str(request.current_user['_id']) != user_id and request.current_user.get('role') != 'admin':
+        return jsonify({'error': 'Access denied'}), 403
+    safe_name = os.path.basename(filename)
+    if safe_name != secure_filename(safe_name):
+        return jsonify({'error': 'Invalid file name'}), 400
+    user = mongo.db.users.find_one({'_id': parse_object_id(user_id)})
+    if not user or user.get('profile_image', '').rstrip('/').split('/')[-1] != safe_name:
+        return jsonify({'error': 'Profile image not found'}), 404
+    return send_from_directory(app.config['UPLOAD_FOLDER'], safe_name)
+
 # ------------------- JOBS ROUTES -------------------
 @app.route('/api/jobs', methods=['GET'])
 def get_jobs():
@@ -1347,11 +1376,6 @@ def applied_jobs_page():
 @app.route('/admin_dashboard.html')
 def admin_dashboard_page():
     return render_template('admin_dashboard.html')
-
-# Serve static files
-@app.route('/static/<path:path>')
-def serve_static(path):
-    return send_from_directory('static', path)
 
 @app.route("/forgot-password.html")
 def forgot_password_page():
