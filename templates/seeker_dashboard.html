@@ -374,13 +374,13 @@ body {
                     </div>
 
                     <div class="job-info" style="flex:1; margin-left: 16px;">
-                        <h4 id="title-${job._id}">${job.title} ${job.alreadyApplied ? '<span style="color: #22c55e; font-size: 12px;">(Applied)</span>' : ''}</h4>
-                        <p>${job.company} &bull; ${job.location || 'N/A'}</p>
+                        <h4 id="title-${escapeHtml(job._id)}">${escapeHtml(job.title)} ${job.alreadyApplied ? '<span style="color: #22c55e; font-size: 12px;">(Applied)</span>' : ''}</h4>
+                        <p>${escapeHtml(job.company)} &bull; ${escapeHtml(job.location || 'N/A')}</p>
                     </div>
 
                     <div class="job-actions">
-                        <button class="${applyBtnClass}" onclick="toggleApply('${job._id}', this)">${applyBtnText}</button>
-                        <button class="btn-view" onclick="viewJobDetails('${job._id}')">View</button>
+                        <button class="${applyBtnClass}" onclick="toggleApply('${escapeHtml(job._id)}', this)">${applyBtnText}</button>
+                        <button class="btn-view" onclick="viewJobDetails('${escapeHtml(job._id)}')">View</button>
                         <div class="apply-msg" id="msg-${job._id}"></div>
                     </div>
                 `;
@@ -424,7 +424,7 @@ body {
                     }
                 }
                 if (titleEl) {
-                    const baseTitle = job.title;
+                    const baseTitle = escapeHtml(job.title);
                     titleEl.innerHTML = applied
                         ? `${baseTitle} <span style="color: #22c55e; font-size: 12px;">(Applied)</span>`
                         : baseTitle;
@@ -487,15 +487,15 @@ body {
 
             document.getElementById('modalTitle').textContent = job.title;
             document.getElementById('modalBody').innerHTML = `
-                <p><span class="label">Company:</span> ${job.company || 'N/A'}</p>
-                <p><span class="label">Location:</span> ${job.location || 'N/A'}</p>
-                <p><span class="label">Skills Required:</span> ${job.skills || 'N/A'}</p>
+                <p><span class="label">Company:</span> ${escapeHtml(job.company || 'N/A')}</p>
+                <p><span class="label">Location:</span> ${escapeHtml(job.location || 'N/A')}</p>
+                <p><span class="label">Skills Required:</span> ${escapeHtml(job.skills || 'N/A')}</p>
                 <p><span class="label">Match Score:</span> <span style="color: #6366f1; font-weight: 600;">${job.matchPercentage || 0}%</span></p>
-                <p><span class="label">Matched Skills:</span> ${(job.matchedSkills || []).join(', ') || 'None'}</p>
-                <p><span class="label">Missing Skills:</span> ${(job.missingSkills || []).join(', ') || 'None'}</p>
+                <p><span class="label">Matched Skills:</span> ${escapeHtml((job.matchedSkills || []).join(', ') || 'None')}</p>
+                <p><span class="label">Missing Skills:</span> ${escapeHtml((job.missingSkills || []).join(', ') || 'None')}</p>
                 <hr style="border-color: rgba(255,255,255,0.1); margin: 12px 0;">
                 <p><span class="label">Description:</span></p>
-                <p>${job.description || 'No description available.'}</p>
+                <p>${escapeHtml(job.description || 'No description available.')}</p>
             `;
 
             const alreadyApplied = job.alreadyApplied;
