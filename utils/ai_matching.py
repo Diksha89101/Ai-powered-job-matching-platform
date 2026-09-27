@@ -291,7 +291,7 @@ def extract_keywords_from_text(text: str) -> List[str]:
     return extract_resume_skills_nlp(text)
 
 
-def build_candidate_profile(skills_text: str = "", resume_text: str = "") -> Dict[str, List[str]]:
+def build_candidate_profile(skills_text: str = "", resume_text: str = "") -> Dict[str, object]:
     manual_skills = normalize_skill_list(skills_text)
     resume_skills = extract_resume_skills_nlp(resume_text)
     candidate_text = "\n".join(part for part in [skills_text, resume_text] if part).strip()
@@ -303,7 +303,7 @@ def build_candidate_profile(skills_text: str = "", resume_text: str = "") -> Dic
     }
 
 
-def build_job_profile(skills_text: str = "", title: str = "", description: str = "") -> Dict[str, List[str]]:
+def build_job_profile(skills_text: str = "", title: str = "", description: str = "") -> Dict[str, object]:
     manual_skills = normalize_skill_list(skills_text)
     inferred_keywords = extract_keywords_from_text(" ".join([title or "", description or ""]))
     match_keywords = manual_skills or inferred_keywords
