@@ -64,9 +64,12 @@ MongoDB
 ## Project Structure
 
 - app.py — Flask routes and application orchestration
-- config.py — configuration values
+- app/config.py — environment-backed configuration
+- app/security.py — password and upload validation
+- app/services/matching.py — matching service facade
+- app/services/resume_parser.py — resume parsing service facade
 - requirements.txt — Python dependencies
-- utils/ai_matching.py — resume parsing, skill extraction, embeddings and scoring
+- utils/ai_matching.py — matching implementation and semantic embeddings
 - templates/ — Jinja2 pages
 - static/ — CSS, JavaScript and frontend assets
 - uploads/ — local upload directory
