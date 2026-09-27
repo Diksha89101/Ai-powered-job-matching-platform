@@ -27,6 +27,7 @@ load_dotenv(override=True)
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.config.update(build_config())
+app.config['PROFILE_IMAGE_FOLDER'] = os.getenv('PROFILE_IMAGE_FOLDER', os.path.join(app.root_path, 'static', 'profile-images'))
 
 # Application thresholds
 MIN_MATCH_PERCENTAGE_TO_APPLY = int(os.getenv('MIN_MATCH_PERCENTAGE_TO_APPLY', 50))
@@ -57,6 +58,7 @@ app.config['MAIL_DEFAULT_SENDER'] = env_value('MAIL_DEFAULT_SENDER') or app.conf
 
 # Ensure upload folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['PROFILE_IMAGE_FOLDER'], exist_ok=True)
 
 mongo = PyMongo(app)
 mail = Mail(app)
@@ -224,9 +226,6 @@ def send_password_reset_email(user, reset_link):
     )
     mail.send(msg)
 
-
-def has_allowed_extension(filename, allowed_extensions):
-    return os.path.splitext(filename or '')[1].lower() in allowed_extensions
 
 
 def get_seed_admin_config():
@@ -415,6 +414,7 @@ def register():
     })
 
 @app.route('/api/auth/login', methods=['POST'])
+@limiter.limit('10 per minute')
 def login():
     data = request.get_json(silent=True) or {}
     email = normalize_email(data.get('email'))
@@ -865,8 +865,8 @@ def update_profile():
             if not safe_name:
                 return jsonify({'error': 'Only JPG, JPEG, PNG, and GIF files are allowed for profile photos'}), 400
             filename = f"{datetime.datetime.utcnow().timestamp()}_{safe_name}"
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            update_fields['profile_image'] = f'/api/users/{request.current_user["_id"]}/profile-image/{filename}'
+            file.save(os.path.join(app.config['PROFILE_IMAGE_FOLDER'], filename))
+            update_fields['profile_image'] = f'/static/profile-images/{filename}'
     
     # Handle resume upload
     if 'resume' in request.files:
