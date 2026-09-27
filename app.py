@@ -992,8 +992,10 @@ def apply_job(job_id):
     )
     match = calculate_keyword_match(
         candidate_profile['profile_keywords'],
-        job_profile['match_keywords'],
-        job_profile['inferred_keywords'],
+                job_profile['match_keywords'],
+                job_profile['inferred_keywords'],
+                candidate_profile.get('semantic_text', ''),
+                job_profile.get('semantic_text', ''),
     )
     if match.get('matchPercentage', 0) < MIN_MATCH_PERCENTAGE_TO_APPLY:
         return jsonify({'error': f'Cannot apply: job match must be at least {MIN_MATCH_PERCENTAGE_TO_APPLY}%.'}), 400
@@ -1078,8 +1080,10 @@ def recommended_jobs():
         )
         match = calculate_keyword_match(
             candidate_profile['profile_keywords'],
-            job_profile['match_keywords'],
-            job_profile['inferred_keywords'],
+                job_profile['match_keywords'],
+                job_profile['inferred_keywords'],
+                candidate_profile.get('semantic_text', ''),
+                job_profile.get('semantic_text', ''),
         )
         job['_id'] = str(job['_id'])
         job.update(match)
@@ -1130,6 +1134,8 @@ def get_applicants(job_id):
                 candidate_profile['profile_keywords'],
                 job_profile['match_keywords'],
                 job_profile['inferred_keywords'],
+                candidate_profile.get('semantic_text', ''),
+                job_profile.get('semantic_text', ''),
             )
         )
         if 'resume_text' in app['seeker']:
@@ -1174,6 +1180,8 @@ def get_recruiter_applicants():
                 candidate_profile['profile_keywords'],
                 job_profile['match_keywords'],
                 job_profile['inferred_keywords'],
+                candidate_profile.get('semantic_text', ''),
+                job_profile.get('semantic_text', ''),
             )
             app.update(match)
             if 'resume_text' in app['seeker']:
