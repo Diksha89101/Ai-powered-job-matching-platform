@@ -8,15 +8,18 @@ __pycache__/
 # Environment
 .env
 .env.*
+!.env.example
 
 # Runtime logs
 *.log
 
 # Local uploads / user data
-static/uploads/*
 uploads/*
-!static/uploads/.gitkeep
 !uploads/.gitkeep
+static/uploads/*
+!static/uploads/.gitkeep
+static/profile-images/*
+!static/profile-images/.gitkeep
 
 # Test / coverage
 .coverage
