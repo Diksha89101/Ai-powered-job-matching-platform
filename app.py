@@ -16,12 +16,12 @@ from functools import wraps
 from app.config import build_config
 from app.security import validate_password, safe_upload_name
 
-from utils.ai_matching import (
+from app.services.matching import (
     build_candidate_profile,
     build_job_profile,
     calculate_keyword_match,
-    extract_resume_text,
 )
+from app.services.resume_parser import extract_resume_text
 
 load_dotenv(override=True)
 
