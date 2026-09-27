@@ -1,8 +1,26 @@
+# Python
 venv/
+.venv/
 __pycache__/
 *.pyc
+.pytest_cache/
+
+# Environment
 .env
-static/uploads/*
+.env.*
+!.env.example
+
+# Runtime logs
+*.log
+
+# Local uploads / user data
 uploads/*
-!static/uploads/.gitkeep
 !uploads/.gitkeep
+static/uploads/*
+!static/uploads/.gitkeep
+static/profile-images/*
+!static/profile-images/.gitkeep
+
+# Test / coverage
+.coverage
+htmlcov/

@@ -132,10 +132,10 @@
             }
 
             list.innerHTML = jobs.map(job => `
-                <div class="job-card" onclick="viewApplicantsForJob('${job._id}')">
-                    <h3>${job.title}</h3>
-                    <p><strong>Company:</strong> ${job.company}</p>
-                    <p><strong>Location:</strong> ${job.location}</p>
+                <div class="job-card" onclick="viewApplicantsForJob('${escapeHtml(job._id)}')">
+                    <h3>${escapeHtml(job.title)}</h3>
+                    <p><strong>Company:</strong> ${escapeHtml(job.company)}</p>
+                    <p><strong>Location:</strong> ${escapeHtml(job.location)}</p>
                     <p style="color: #6366f1;">Click to view applicants →</p>
                 </div>
             `).join('');
@@ -183,9 +183,9 @@
 
                 return `
                 <div class="applicant-card">
-                    <h3>${seeker.name || 'Candidate'}</h3>
-                    <p>Email: ${seeker.email || 'N/A'}</p>
-                    <p>Skills: ${seeker.skills || 'N/A'}</p>
+                    <h3>${escapeHtml(seeker.name || 'Candidate')}</h3>
+                    <p>Email: ${escapeHtml(seeker.email || 'N/A')}</p>
+                    <p>Skills: ${escapeHtml(seeker.skills || 'N/A')}</p>
                     <p>Match: ${item.matchPercentage || 0}%</p>
                 </div>
                 `;

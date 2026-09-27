@@ -40,8 +40,8 @@
 
                 list.innerHTML = jobs.map(job => `
                     <div class="card" style="padding:16px;">
-                        <h3>${job.title}</h3>
-                        <p>${job.company} - ${job.location}</p>
+                        <h3>${escapeHtml(job.title)}</h3>
+                        <p>${escapeHtml(job.company)} - ${escapeHtml(job.location)}</p>
                         <p>${(job.description || '').slice(0, 140)}</p>
                         <button class="btn" onclick="viewApplicants('${job._id}')">View Applicants</button>
                     </div>
