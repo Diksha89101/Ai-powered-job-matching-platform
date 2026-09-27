@@ -515,7 +515,7 @@ def forgot_password():
     except Exception as e:
         print(f"Error sending password reset email to {email}: {str(e)}")
         # Always show the dev link when email fails (for development/demo purposes)
-        if reset_link and os.getenv('FLASK_ENV', '').lower() == 'development':
+        if reset_link and os.getenv('ALLOW_DEV_RESET_LINK', '').lower() == 'true':
             response_message['dev_link'] = reset_link
         response_message['message'] = 'Email was not sent because SMTP is not configured correctly.'
     
