@@ -185,10 +185,10 @@ body {
 
                 div.innerHTML = `
                     <div class="job-info">
-                        <h4>${app.seeker.name}</h4>
-                        <p>Applied for: ${app.job_title}</p>
-                        <p>Skills: ${app.seeker.skills || 'Not specified'}</p>
-                        <p>Status: ${app.status || 'Applied'}</p>
+                        <h4>${escapeHtml(app.seeker.name)}</h4>
+                        <p>Applied for: ${escapeHtml(app.job_title)}</p>
+                        <p>Skills: ${escapeHtml(app.seeker.skills || 'Not specified')}</p>
+                        <p>Status: ${escapeHtml(app.status || 'Applied')}</p>
                     </div>
 
                     <div class="mini-circle">
@@ -241,7 +241,7 @@ body {
                 renderApplicants(applicants);
             } catch (error) {
                 const container = document.getElementById('applicantList');
-                container.innerHTML = `<div class="job-card"><div class="job-info"><h4>Error loading applicants</h4><p>${error.message}</p></div></div>`;
+                container.innerHTML = `<div class="job-card"><div class="job-info"><h4>Error loading applicants</h4><p>${escapeHtml(error.message)}</p></div></div>`;
             }
         }
 
