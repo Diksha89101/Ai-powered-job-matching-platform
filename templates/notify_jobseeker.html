@@ -17,6 +17,7 @@
         body {
             background: #1D0936;
             color: white;
+            animation: slideUp 0.8s ease-out;
         }
 
         /* NAVBAR */
@@ -26,7 +27,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(123, 92, 255, 0.9);
+            background: transparent;
         }
 
         .navbar a {
@@ -105,12 +106,24 @@
             color: #aaa;
         }
     </style>
+    <style>
+        @keyframes slideUp {
+            from {
+                transform: translateY(60px);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 
 <body>
-
+ 
     <header class="navbar">
-        <div class="logo">AI JOB</div>
+        <div class="logo">AI Jobs</div>
         <nav>
             <a href="#">Dashboard</a>
             <a href="#">Profile</a>
@@ -159,6 +172,8 @@
 
     </div>
 
+    <script src="/static/js/main.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </body>
 
 </html>

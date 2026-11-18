@@ -4,17 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Jobs</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body {
+            animation: slideUp 0.8s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(60px);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 <body>
     <div class="sidebar">
         <h2>AI HIRE</h2>
-        <a href="/recruiter_home.html">Home</a>
-        <a href="/recruiter_profile.html">Profile</a>
-        <a href="/post_job.html">Post Job</a>
-        <a href="/manage_jobs.html">Manage Jobs</a>
-        <a href="/send_notifications.html">Send Notifications</a>
-        <a href="/recruiter_dashboard.html">Dashboard</a>
+        <a href="/dashboard/recruiter">Home</a>
+        <a href="/recruiter/profile">Profile</a>
+        <a href="/recruiter/jobs/new">Post Job</a>
+        <a href="/recruiter/jobs">Manage Jobs</a>
+        <a href="/recruiter/notifications">Send Notifications</a>
+        <a href="/dashboard/recruiter/overview">Dashboard</a>
         <a href="#" onclick="logout()">Logout</a>
     </div>
 
@@ -24,6 +39,7 @@
     </div>
 
     <script src="/static/js/main.js"></script>
+    <script src="/static/js/app.js"></script>
     <script>
         async function loadJobs() {
             const list = document.getElementById('jobsList');
@@ -40,9 +56,12 @@
 
                 list.innerHTML = jobs.map(job => `
                     <div class="card" style="padding:16px;">
-                        <h3>${job.title}</h3>
-                        <p>${job.company} - ${job.location}</p>
-                        <p>${(job.description || '').slice(0, 140)}</p>
+                        <h3>${escapeHtml(job.title)}</h3>
+                        <p>${escapeHtml(job.company)} - ${escapeHtml(job.location)}</p>
+                        <p>${escapeHtml((job.description || '').slice(0, 140))}</p>
+                        <p><strong>Skills:</strong> ${escapeHtml(job.skills || '')}</p>
+                        <button class="btn" onclick="editJob('${job._id}')">Edit</button>
+                        <button class="btn" onclick="deleteJob('${job._id}')">Delete</button>
                         <button class="btn" onclick="viewApplicants('${job._id}')">View Applicants</button>
                     </div>
                 `).join('');
@@ -52,10 +71,45 @@
         }
 
         function viewApplicants(jobId) {
-            window.location.href = `/applicants.html?job_id=${jobId}`;
+            window.location.href = `/recruiter/applicants?job_id=${jobId}`;
+        }
+
+        async function editJob(jobId) {
+            const jobsResponse = await fetchWithAuth('/recruiter/jobs');
+            const jobs = await jobsResponse.json();
+            const job = jobs.find(item => item._id === jobId);
+            if (!jobsResponse.ok || !job) return alert('Could not find this job.');
+            const title = prompt('Job title', job.title);
+            if (title === null) return;
+            const company = prompt('Company', job.company);
+            if (company === null) return;
+            const location = prompt('Location', job.location);
+            if (location === null) return;
+            const description = prompt('Description', job.description || '');
+            if (description === null) return;
+            const skills = prompt('Required skills (comma separated)', job.skills || '');
+            if (skills === null) return;
+            const response = await fetchWithAuth(`/recruiter/jobs/${encodeURIComponent(jobId)}`, {
+                method: 'PUT',
+                body: JSON.stringify({ title, company, location, description, skills })
+            });
+            const result = await response.json();
+            if (!response.ok) return alert(result.error || 'Could not update this job.');
+            loadJobs();
+        }
+
+        async function deleteJob(jobId) {
+            if (!confirm('Delete this job and its applications?')) return;
+            const response = await fetchWithAuth(`/recruiter/jobs/${encodeURIComponent(jobId)}`, {
+                method: 'DELETE'
+            });
+            const result = await response.json();
+            if (!response.ok) return alert(result.error || 'Could not delete this job.');
+            loadJobs();
         }
 
         loadJobs();
     </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </body>
 </html>

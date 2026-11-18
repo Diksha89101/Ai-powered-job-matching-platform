@@ -10,7 +10,8 @@
             background: #1D0936;
             color: #fff;
             font-family: 'Segoe UI';
-            margin: 0
+            margin: 0;
+            animation: slideUp 0.8s ease-out;
         }
 
         .navbar {
@@ -18,7 +19,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 14px 40px;
-            background: rgba(123, 92, 255, .85)
+            background: transparent
         }
 
         .nav-right {
@@ -106,22 +107,34 @@
             cursor: pointer
         }
     </style>
+    <style>
+        @keyframes slideUp {
+            from {
+                transform: translateY(60px);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 
-<body>
-
+<body class="jobseeker-home-page">
+ 
     <div class="navbar">
-        <div>AI JOB</div>
+        <div>AI Jobs</div>
 
         <div class="nav-right">
-            <a href="/browse_jobs.html">Browse Jobs</a>
+            <a href="/jobs">Browse Jobs</a>
 
             <div class="profile" onclick="toggleDropdown()">
-                <img id="profilePic" src="/static/uploads/default.png" alt="Profile">
+                <img id="profilePic" src="/static/uploads/default.svg" alt="Profile">
                 <span id="userName">User</span>
 
                 <div id="dropdown" class="dropdown">
-                    <a href="jobseeker_profile.html">Profile</a>
+                    <a href="/profile">Profile</a>
                     <a href="#" onclick="logout()">Logout</a>
                 </div>
             </div>
@@ -132,17 +145,17 @@
         <h1>Welcome, <span id="welcomeName"></span></h1>
 
         <div class="grid">
-            <div class="card" onclick="go('browse_jobs.html')">
+            <div class="card" onclick="go('/jobs')">
                 <h3>Browse Jobs</h3>
                 <p>Find AI matched jobs</p><button>Explore</button>
             </div>
 
-            <div class="card" onclick="go('applied_jobs.html')">
+            <div class="card" onclick="go('/jobs/applied')">
                 <h3>Applied Jobs</h3>
                 <p>Track applications</p><button>View</button>
             </div>
 
-            <div class="card" onclick="go('notifications.html')">
+            <div class="card" onclick="go('/notifications')">
                 <h3>Notifications</h3>
                 <p>Recruiter updates</p><button>Open</button>
             </div>
@@ -150,11 +163,12 @@
     </div>
 
     <script src="/static/js/main.js"></script>
+    <script src="/static/js/app.js"></script>
     <script>
         async function loadUser() {
             const user = getUser();
             if (!user) {
-                window.location.href = '/login.html';
+                window.location.href = '/login';
                 return;
             }
             document.getElementById('userName').innerText = user.name;
@@ -163,7 +177,10 @@
             const res = await fetchWithAuth('/auth/me');
             const data = await res.json();
             if (data.profile_image) {
-                document.getElementById('profilePic').src = data.profile_image;
+                await loadProtectedImage(
+                    document.getElementById('profilePic'),
+                    data.profile_image,
+                );
             }
         }
 
@@ -179,6 +196,7 @@
         loadUser();
     </script>
 
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </body>
 
 </html>

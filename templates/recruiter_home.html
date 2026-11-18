@@ -10,7 +10,8 @@
             background: #1D0936;
             color: #fff;
             font-family: 'Segoe UI';
-            margin: 0
+            margin: 0;
+            animation: slideUp 0.8s ease-out;
         }
 
         .navbar {
@@ -18,7 +19,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 14px 40px;
-            background: rgba(123, 92, 255, .85)
+            background: transparent
         }
 
         .nav-right {
@@ -101,12 +102,24 @@
             cursor: pointer
         }
     </style>
+    <style>
+        @keyframes slideUp {
+            from {
+                transform: translateY(60px);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 
 <body>
-
+ 
     <div class="navbar">
-        <div>AI JOB</div>
+        <div>AI Jobs</div>
 
         <div class="nav-right">
             <a href="#">Home</a>
@@ -116,7 +129,7 @@
                 <span id="userName">Recruiter</span>
 
                 <div id="dropdown" class="dropdown">
-                    <a href="recruiter_profile.html">Profile</a>
+                    <a href="/recruiter/profile">Profile</a>
                     <a href="#" onclick="logout()">Logout</a>
                 </div>
             </div>
@@ -127,25 +140,26 @@
         <h1>Welcome, <span id="welcomeName">Recruiter</span></h1>
 
         <div class="grid">
-            <div class="card" onclick="go('post_job.html')">
+            <div class="card" onclick="go('/recruiter/jobs/new')">
                 <h3>Post Job</h3><button>Create</button>
             </div>
 
-            <div class="card" onclick="go('manage_jobs.html')">
+            <div class="card" onclick="go('/recruiter/jobs')">
                 <h3>Manage Jobs</h3><button>Manage</button>
             </div>
 
-            <div class="card" onclick="go('applicants.html')">
+            <div class="card" onclick="go('/recruiter/applicants')">
                 <h3>Applicants</h3><button>View</button>
             </div>
 
-            <div class="card" onclick="go('send_notifications.html')">
+            <div class="card" onclick="go('/recruiter/notifications')">
                 <h3>Send Notifications</h3><button>Send</button>
             </div>
         </div>
     </div>
 
     <script src="/static/js/main.js"></script>
+    <script src="/static/js/app.js"></script>
     <script>
         function go(path) {
             window.location.href = path;
@@ -159,7 +173,7 @@
         async function loadRecruiter() {
             const user = getUser();
             if (!user) {
-                window.location.href = '/login.html';
+                window.location.href = '/login';
                 return;
             }
 
@@ -169,13 +183,17 @@
             const res = await fetchWithAuth('/auth/me');
             const data = await res.json();
             if (data.profile_image) {
-                document.getElementById('profilePic').src = data.profile_image;
+                await loadProtectedImage(
+                    document.getElementById('profilePic'),
+                    data.profile_image,
+                );
             }
         }
 
         loadRecruiter();
     </script>
 
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </body>
 
 </html>
