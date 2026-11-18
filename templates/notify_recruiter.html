@@ -18,6 +18,7 @@
             background: #1D0936;
             color: white;
             padding: 40px;
+            animation: slideUp 0.8s ease-out;
         }
 
         /* CONTAINER */
@@ -150,10 +151,22 @@
             transform: scale(1.03);
         }
     </style>
+    <style>
+        @keyframes slideUp {
+            from {
+                transform: translateY(60px);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 
 <body>
-
+ 
     <div class="card">
 
         <div class="hero">
@@ -174,45 +187,58 @@
 
     </div>
 
+    <script src="/static/js/main.js"></script>
+    <script src="/static/js/app.js"></script>
     <script>
        
-        /* SAMPLE DATA */
-        const applicants = [
-            { name: "Diksha", email: "receiver_email@gmail.com", job: "Frontend Developer" },
-            { name: "Rahul", email: "receiver_email@gmail.com", job: "Backend Developer" }
-        ];
+        let applicants = [];
 
         /* LOAD APPLICANTS */
-        function loadApplicants() {
+        async function loadApplicants() {
             const list = document.getElementById("applicantList");
-
-            applicants.forEach((app, i) => {
-                const div = document.createElement("div");
-                div.className = "applicant-row";
-
-                div.innerHTML = `
-            <div class="applicant-info">
-                <span class="name">${app.name}</span>
-                <span class="job">${app.job}</span>
-            </div>
-
-            <label class="checkbox">
-                <input type="checkbox" value="${i}">
-                <span class="checkmark"></span>
-            </label>
-        `;
-
-                list.appendChild(div);
-            });
+            list.textContent = 'Loading applicants…';
+            try {
+                const response = await fetchWithAuth('/recruiter/applicants');
+                const payload = await response.json();
+                if (!response.ok) throw new Error(payload.error || 'Unable to load applicants.');
+                applicants = Array.isArray(payload) ? payload : [];
+                list.replaceChildren();
+                applicants.forEach((app, index) => {
+                    const row = document.createElement('div');
+                    row.className = 'applicant-row';
+                    const info = document.createElement('div');
+                    info.className = 'applicant-info';
+                    const name = document.createElement('span');
+                    name.className = 'name';
+                    name.textContent = app.seeker?.name || 'Applicant';
+                    const job = document.createElement('span');
+                    job.className = 'job';
+                    job.textContent = app.job_title || 'Job applicant';
+                    info.append(name, job);
+                    const label = document.createElement('label');
+                    label.className = 'checkbox';
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.value = String(index);
+                    const checkmark = document.createElement('span');
+                    checkmark.className = 'checkmark';
+                    label.append(checkbox, checkmark);
+                    row.append(info, label);
+                    list.appendChild(row);
+                });
+                if (!applicants.length) list.textContent = 'No applicants yet.';
+            } catch (error) {
+                list.textContent = error.message || 'Unable to load applicants.';
+            }
         }
 
         /* SEND EMAIL */
         async function sendNotification() {
             const message = document.getElementById("message").value.trim();
-            const job = document.getElementById("jobTitle").value.trim();
+            const jobTitle = document.getElementById("jobTitle").value.trim();
 
-            if (!message || !job) {
-                alert("Please fill all fields!");
+            if (!message) {
+                alert("Please enter a message.");
                 return;
             }
 
@@ -223,20 +249,25 @@
                 return;
             }
 
-            for (let box of selected) {
-                const app = applicants[box.value];
-                await fetch("http://127.0.0.1:5000/send-email", {
+            const userIds = Array.from(selected)
+                .map(box => applicants[Number(box.value)]?.seeker_id)
+                .filter(Boolean);
+            try {
+                const response = await fetchWithAuth('/notifications', {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        email: app.email,
-                        message: message,
-                        job: job
+                        user_ids: userIds,
+                        message,
+                        job_title: jobTitle
                     })
                 });
+                const payload = await response.json();
+                if (!response.ok) throw new Error(payload.error || 'Unable to send notifications.');
+                alert(payload.message || 'Notifications sent!');
+            } catch (error) {
+                alert(error.message || 'Unable to send notifications.');
             }
-
-            alert("Notifications sent!");
         }
 
         /* INIT */
@@ -244,6 +275,7 @@
 
     </script>
 
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </body>
 
 </html>

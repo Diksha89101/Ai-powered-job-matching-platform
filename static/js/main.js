@@ -26,7 +26,7 @@ function isLoggedIn() {
 function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = '/login.html';
+    window.location.href = '/login';
 }
 
 async function fetchWithAuth(url, options = {}) {
@@ -53,44 +53,98 @@ async function fetchWithAuth(url, options = {}) {
 }
 
 (function addBackButton() {
+    if (document.body.classList.contains('landing-page') || document.body.classList.contains('jobseeker-home-page')) return;
     if (document.getElementById('globalBackBtn')) return;
-    if (window.location.pathname === '/' || window.location.pathname === '/landing.html') return;
 
     const sidebar = document.querySelector('.sidebar');
     const navbar = document.querySelector('.navbar');
 
-    if (sidebar) {
-        const backLink = document.createElement('a');
-        backLink.id = 'globalBackBtn';
-        backLink.href = 'javascript:history.back()';
-        backLink.textContent = '\u2B05 Back';
-        backLink.style.cssText = 'display:inline-block;margin-top:4px;margin-bottom:20px;padding:6px 14px;border-radius:8px;background:#6366f1;color:white;text-decoration:none;font-size:13px;font-family:"Segoe UI",sans-serif;cursor:pointer;';
-        const title = sidebar.querySelector('h2, h1');
-        if (title) {
-            sidebar.insertBefore(backLink, title);
+    const backButton = document.createElement('button');
+    backButton.id = 'globalBackBtn';
+    backButton.type = 'button';
+    backButton.setAttribute('aria-label', 'Go back');
+    backButton.title = 'Back';
+    backButton.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 12H5m0 0 7 7m-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    backButton.style.cssText = 'display:flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:0;background:transparent;color:inherit;cursor:pointer;transition:transform .2s ease,color .2s ease;z-index:9999;';
+    backButton.onmouseenter = () => {
+        backButton.style.transform = 'translateX(-3px)';
+        backButton.style.color = '#a78bfa';
+    };
+    backButton.onmouseleave = () => {
+        backButton.style.transform = 'translateX(0)';
+        backButton.style.color = '';
+    };
+    backButton.onclick = () => {
+        if (window.history.length > 1) {
+            window.history.back();
         } else {
-            sidebar.insertBefore(backLink, sidebar.firstChild);
+            window.location.href = '/';
         }
+    };
+
+    if (sidebar) {
+        backButton.style.position = 'fixed';
+        backButton.style.top = '16px';
+        backButton.style.left = '16px';
+        document.body.appendChild(backButton);
         return;
     }
 
-    const btn = document.createElement('button');
-    btn.id = 'globalBackBtn';
-    btn.innerHTML = '\u2B05';
-    btn.title = 'Back';
-    btn.style.cssText = 'position:fixed;z-index:9999;width:36px;height:36px;border-radius:8px;background:#6366f1;border:none;color:white;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;';
-    btn.onclick = () => history.back();
-
+    backButton.style.position = 'fixed';
     if (navbar) {
-        btn.style.top = '84px';
-        btn.style.left = '16px';
+        backButton.style.top = '76px';
+        backButton.style.left = '12px';
     } else {
-        btn.style.top = '16px';
-        btn.style.left = '16px';
+        backButton.style.top = '16px';
+        backButton.style.left = '16px';
     }
-
-    document.body.appendChild(btn);
+    backButton.style.color = 'white';
+    document.body.appendChild(backButton);
 })();
+
+(function installSlidingMenu() {
+    if (document.body.classList.contains('landing-page') || document.body.classList.contains('jobseeker-home-page')) return;
+    const menu = document.querySelector('.sidebar, .navbar, body > header');
+    if (!menu || document.querySelector('.slide-menu-toggle')) return;
+
+    menu.classList.add('slide-menu');
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'slide-menu-toggle';
+    toggle.setAttribute('aria-label', 'Open navigation menu');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+
+    document.body.appendChild(toggle);
+
+    toggle.addEventListener('click', () => {
+        const isOpen = menu.classList.toggle('menu-open');
+        toggle.setAttribute('aria-expanded', String(isOpen));
+        toggle.setAttribute('aria-label', isOpen ? 'Close navigation menu' : 'Open navigation menu');
+    });
+})();
+
+// Keep the login role tabs working even when inline click handlers are blocked
+// or replaced by browser extensions/CSP tooling.
+document.addEventListener('click', (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const tab = target && target.closest('.toggle .tab');
+    if (!tab) return;
+
+    const tabs = Array.from(document.querySelectorAll('.toggle .tab'));
+    const role = ['job', 'recruiter', 'admin'][tabs.indexOf(tab)];
+    const forms = {
+        job: document.getElementById('jobForm'),
+        recruiter: document.getElementById('recruiterForm'),
+        admin: document.getElementById('adminForm')
+    };
+    if (!role || !forms[role]) return;
+
+    tabs.forEach((item) => item.classList.toggle('active', item === tab));
+    Object.entries(forms).forEach(([formRole, form]) => {
+        form.classList.toggle('active', formRole === role);
+    });
+});
 
 function setCircleProgress(canvasId, percentage) {
     const canvas = document.getElementById(canvasId);

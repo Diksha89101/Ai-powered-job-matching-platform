@@ -7,10 +7,12 @@ from utils.ai_matching import (
     build_candidate_profile,
     build_job_profile,
     calculate_keyword_match,
+    normalize_skill_list,
 )
 
 __all__ = [
     "build_candidate_profile",
     "build_job_profile",
     "calculate_keyword_match",
+    "normalize_skill_list",
 ]

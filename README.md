@@ -120,7 +120,14 @@ The first semantic-matching run may download the configured Sentence Transformer
 
 ### 4. Configure environment variables
 
-Create a .env file based on .env.example and configure MongoDB, Flask secret, mail settings and optional semantic-matching settings.
+Create a `.env` file based on `.env.example` and configure MongoDB, a generated
+Flask secret, mail settings, and optional semantic-matching settings. Generate
+`SECRET_KEY` with `python -c "import secrets; print(secrets.token_urlsafe(48))"`;
+the application rejects placeholder, short, and low-variation secrets. Existing
+process environment values take precedence over `.env`.
+
+For local testing without SMTP, set `ALLOW_DEV_RESET_LINK=True` only when
+`FLASK_ENV=development`; reset links are never returned in production.
 
 SEMANTIC_MODEL_NAME=all-MiniLM-L6-v2
 SEMANTIC_WEIGHT=0.60
@@ -152,11 +159,28 @@ The numerical values above are response fields, not a benchmark result.
 ## Security and Engineering Notes
 
 - Secrets are loaded from environment variables; there is no production fallback secret.
+- Login and registration return the compatible `token` and `user` JSON fields.
+  Access tokens expire after `ACCESS_TOKEN_TTL_MINUTES`; refresh tokens rotate
+  through an HttpOnly, SameSite cookie and require a CSRF header. Existing
+  seven-day bearer tokens continue to work until their original expiry.
+- Login, registration, password-reset, refresh, and test-email endpoints are
+  rate-limited. Use shared rate-limit storage (for example
+  `RATELIMIT_STORAGE_URI=redis://...`) when deploying multiple web workers;
+  `memory://` is intended for local, single-process development.
 - CORS is restricted through the CORS_ORIGINS environment variable instead of allowing every origin.
 - Login, password-reset requests, and password-reset submission are rate-limited.
 - Passwords require at least 8 characters plus uppercase, lowercase, and a number.
-- Resume files are stored outside the public static directory and are served through an authenticated backend endpoint.
-- Upload filenames are sanitized and validated by extension.
+- Resume files and profile images are stored outside the public static directory,
+  assigned opaque filenames, checked against file signatures and size limits,
+  and served through authenticated endpoints. Recruiters can download a resume
+  only when the candidate applied to one of their jobs; profile images are
+  owner/admin-only.
+- Security response headers are enabled by default. CSP starts in report-only
+  mode because some existing pages still contain inline scripts and styles.
+- No admin account or demo recruiter/jobs are seeded at application startup.
+  Provision the first administrator explicitly with
+  `python -m flask --app app.py seed-admin` after setting `ADMIN_EMAIL` and a
+  strong `ADMIN_PASSWORD`.
 - Frontend API data is escaped before being inserted into HTML in the main recruiter/seeker views.
 - Runtime logs and uploaded user data are excluded from Git.
 - The application keeps the existing Flask entry point while shared configuration, security, matching, and resume parsing responsibilities are being moved into dedicated modules.
@@ -169,9 +193,37 @@ Run the automated tests with:
 pytest -q
 ```
 
-The test suite covers password validation, upload-name validation, skill alias normalization, keyword matching, and profile construction.
+The test suite covers password validation, upload validation, token and
+authorization behavior, security headers, API input validation, skill alias
+normalization, keyword matching, and profile construction.
 
 GitHub Actions runs the test suite on pushes and pull requests.
+
+### Phase 1 data migrations
+
+Back up MongoDB and uploaded files before migrating production data. Set the
+same production environment variables used by the app, then run these explicit,
+repeatable commands from the repository root:
+
+```bash
+python -m migrations.migrate_private_profile_images
+python -m migrations.create_refresh_session_ttl_index
+```
+
+The profile-image migration copies old files from `static/profile-images/` to
+private storage and updates user records only after each copy succeeds. It
+reports missing files and leaves originals in place for rollback; remove old
+public copies only after verifying migrated records and backups. The TTL index
+cleans up expired refresh-session records; token validity is still checked
+against the stored expiration and revocation state even if the index is not
+present.
+
+After confirming no users still reference the old public paths and taking a
+backup, remove the legacy static copies while retaining a private rollback copy:
+
+```bash
+python -m migrations.migrate_private_profile_images --remove-public-copies
+```
 
 ## Screenshots
 

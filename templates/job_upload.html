@@ -18,6 +18,7 @@
             display: flex;
             height: 100vh;
             background: #1D0936;
+            animation: slideUp 0.8s ease-out;
             color: white;
         }
 
@@ -74,15 +75,27 @@
             cursor: pointer;
         }
     </style>
+    <style>
+        @keyframes slideUp {
+            from {
+                transform: translateY(60px);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 
 <body>
-
+ 
     <div class="sidebar">
         <h2>AI HIRE</h2>
-        <a href="recruiter_dashboard.html">Dashboard</a>
-        <a href="post_job.html">Post Job</a>
-        <a href="recruiter_profile.html">Profile</a>
+        <a href="/dashboard/recruiter/overview">Dashboard</a>
+        <a href="/recruiter/jobs/new">Post Job</a>
+        <a href="/recruiter/profile">Profile</a>
     </div>
 
     <div class="main">
@@ -160,6 +173,8 @@
 
     </script>
 
+    <script src="/static/js/main.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </body>
 
 </html>

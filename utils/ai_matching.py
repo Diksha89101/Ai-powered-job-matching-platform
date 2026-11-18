@@ -1,11 +1,14 @@
+# pyright: reportMissingImports=false
+
 import os
 import re
+import math
 import zipfile
-from typing import Dict, Iterable, List
+from typing import Any, Dict, Iterable, List
 from xml.etree import ElementTree
 
 try:
-    from PyPDF2 import PdfReader
+    from pypdf import PdfReader
 except Exception:  # pragma: no cover - fallback when dependency is unavailable
     PdfReader = None
 
@@ -166,8 +169,6 @@ _OCR_ENGINE = None
 _EMBEDDING_MODEL = None
 _EMBEDDING_LOAD_ATTEMPTED = False
 _EMBEDDING_MODEL_NAME = os.getenv("SEMANTIC_MODEL_NAME", "all-MiniLM-L6-v2")
-SEMANTIC_WEIGHT = float(os.getenv("SEMANTIC_WEIGHT", "0.60"))
-KEYWORD_WEIGHT = float(os.getenv("KEYWORD_WEIGHT", "0.40"))
 
 
 def get_nlp():
@@ -216,6 +217,25 @@ def semantic_similarity(candidate_text: str, job_text: str) -> float:
         return max(0.0, min(1.0, similarity))
     except Exception:
         return 0.0
+
+
+def _weight_config() -> tuple[float, float]:
+    """Return normalized hybrid weights, falling back safely for bad config."""
+    try:
+        semantic = float(os.getenv("SEMANTIC_WEIGHT", "0.60"))
+        keyword = float(os.getenv("KEYWORD_WEIGHT", "0.40"))
+        if (
+            not math.isfinite(semantic)
+            or not math.isfinite(keyword)
+            or semantic < 0
+            or keyword < 0
+            or semantic + keyword <= 0
+        ):
+            raise ValueError
+    except (TypeError, ValueError):
+        return 0.6, 0.4
+    total = semantic + keyword
+    return semantic / total, keyword / total
 
 
 def get_ocr_engine():
@@ -291,7 +311,7 @@ def extract_keywords_from_text(text: str) -> List[str]:
     return extract_resume_skills_nlp(text)
 
 
-def build_candidate_profile(skills_text: str = "", resume_text: str = "") -> Dict[str, object]:
+def build_candidate_profile(skills_text: str = "", resume_text: str = "") -> Dict[str, Any]:
     manual_skills = normalize_skill_list(skills_text)
     resume_skills = extract_resume_skills_nlp(resume_text)
     candidate_text = "\n".join(part for part in [skills_text, resume_text] if part).strip()
@@ -303,7 +323,7 @@ def build_candidate_profile(skills_text: str = "", resume_text: str = "") -> Dic
     }
 
 
-def build_job_profile(skills_text: str = "", title: str = "", description: str = "") -> Dict[str, object]:
+def build_job_profile(skills_text: str = "", title: str = "", description: str = "") -> Dict[str, Any]:
     manual_skills = normalize_skill_list(skills_text)
     inferred_keywords = extract_keywords_from_text(" ".join([title or "", description or ""]))
     match_keywords = manual_skills or inferred_keywords
@@ -324,20 +344,37 @@ def calculate_keyword_match(
     inferred_keywords: Iterable[str] = (),
     candidate_text: str = "",
     job_text: str = "",
-) -> Dict[str, object]:
-    candidate_list = dedupe_preserve_order(candidate_keywords)
-    scoring_keywords = dedupe_preserve_order(match_keywords)
-    context_keywords = dedupe_preserve_order(inferred_keywords)
-    candidate_set = set(candidate_list)
+) -> Dict[str, Any]:
+    candidate_display = dedupe_preserve_order(
+        value.strip() for value in candidate_keywords
+        if isinstance(value, str) and value.strip()
+    )
+    scoring_display = dedupe_preserve_order(
+        value.strip() for value in match_keywords
+        if isinstance(value, str) and value.strip()
+    )
+    context_display = dedupe_preserve_order(
+        value.strip() for value in inferred_keywords
+        if isinstance(value, str) and value.strip()
+    )
+    candidate_set = {_normalize_keyword(value) for value in candidate_display}
+    scoring_keys = [_normalize_keyword(value) for value in scoring_display]
+    context_keys = [_normalize_keyword(value) for value in context_display]
 
-    matched_skills = [keyword for keyword in scoring_keywords if keyword in candidate_set]
-    missing_skills = [keyword for keyword in scoring_keywords if keyword not in candidate_set]
+    matched_skills = [
+        display for display, key in zip(scoring_display, scoring_keys)
+        if key in candidate_set
+    ]
+    missing_skills = [
+        display for display, key in zip(scoring_display, scoring_keys)
+        if key not in candidate_set
+    ]
     bonus_keywords = [
-        keyword for keyword in context_keywords
-        if keyword in candidate_set and keyword not in matched_skills
+        display for display, key in zip(context_display, context_keys)
+        if key in candidate_set and key not in set(scoring_keys)
     ]
 
-    total = len(scoring_keywords)
+    total = len(scoring_keys)
     match_percentage = int(round((len(matched_skills) / total) * 100)) if total else 0
 
     semantic_similarity_score = semantic_similarity(candidate_text, job_text)
@@ -345,10 +382,12 @@ def calculate_keyword_match(
 
     # Hybrid scoring keeps explicit skill overlap while adding semantic understanding.
     # If embeddings are unavailable, the existing keyword score remains the fallback.
-    if candidate_text and job_text and get_embedding_model() is not None:
+    embedding_model = get_embedding_model() if candidate_text and job_text else None
+    if embedding_model is not None:
+        semantic_weight, keyword_weight = _weight_config()
         match_percentage = int(round(
-            (semantic_percentage * SEMANTIC_WEIGHT) +
-            (match_percentage * KEYWORD_WEIGHT)
+            (semantic_percentage * semantic_weight) +
+            (match_percentage * keyword_weight)
         ))
         match_percentage = max(0, min(100, match_percentage))
 
@@ -360,7 +399,7 @@ def calculate_keyword_match(
         "matchedSkills": matched_skills,
         "missingSkills": missing_skills,
         "bonusKeywords": bonus_keywords,
-        "candidateKeywords": candidate_list,
+        "candidateKeywords": candidate_display,
         "totalKeywords": total,
     }
 
@@ -384,6 +423,8 @@ def _extract_pdf_text(file_path: str) -> str:
 
     try:
         reader = PdfReader(file_path)
+        if not reader.pages:
+            return ""
         text_parts = []
         for page in reader.pages:
             text_parts.append(page.extract_text() or "")
@@ -459,7 +500,10 @@ def _extract_plain_text(file_path: str) -> str:
 def _extract_legacy_doc_text(file_path: str) -> str:
     try:
         with open(file_path, "rb") as file_obj:
-            raw_text = file_obj.read().decode("latin-1", errors="ignore")
+            raw_bytes = file_obj.read()
+        if not raw_bytes.startswith(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"):
+            return ""
+        raw_text = raw_bytes.decode("latin-1", errors="ignore")
         return _clean_extracted_text(raw_text)
     except Exception:
         return ""

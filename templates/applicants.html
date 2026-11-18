@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Applicants</title>
-    <link rel="stylesheet" href="/static/css/style.css">
     <style>
         .job-card {
             background: rgba(255, 255, 255, .05);
@@ -82,13 +81,29 @@
             margin-bottom: 16px;
         }
     </style>
+    <style>
+        body {
+            animation: slideUp 0.8s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(60px);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 <body>
     <div class="sidebar">
         <h2>AI HIRE</h2>
-        <a href="/recruiter_home.html">Home</a>
-        <a href="/manage_jobs.html">Manage Jobs</a>
-        <a href="/send_notifications.html">Send Notifications</a>
+        <a href="/dashboard/recruiter">Home</a>
+        <a href="/recruiter/jobs">Manage Jobs</a>
+        <a href="/recruiter/notifications">Send Notifications</a>
         <a href="#" onclick="logout()">Logout</a>
     </div>
 
@@ -111,6 +126,7 @@
         </div>
     </div>
     <script src="/static/js/main.js"></script>
+    <script src="/static/js/app.js"></script>
 <script>
     let currentJobs = [];
 
@@ -218,5 +234,6 @@
     init();
 </script>
     
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </body>
 </html>

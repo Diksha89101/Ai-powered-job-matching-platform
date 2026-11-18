@@ -6,7 +6,7 @@
     <title>Admin Dashboard</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { display: flex; height: 100vh; background: #1D0936; color: white; }
+        body { display: flex; height: 100vh; background: #1D0936; color: white; animation: slideUp 0.8s ease-out; }
         .sidebar { width: 260px; padding: 24px; background: rgba(255,255,255,0.04); border-right: 1px solid rgba(255,255,255,0.1); overflow-y: auto; }
         .sidebar h2 { margin-bottom: 30px; color: #6366f1; }
         .sidebar a { display: block; margin: 12px 0; padding: 10px 14px; border-radius: 8px; color: #cbd5f5; text-decoration: none; cursor: pointer; transition: 0.2s; }
@@ -67,17 +67,27 @@
         .time-card .metric { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
         .status-select { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 4px 8px; border-radius: 6px; font-size: 12px; cursor: pointer; }
         .status-select option { color: black; }
+        @keyframes slideUp {
+            from {
+                transform: translateY(60px);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 <body>
     <div class="sidebar">
         <h2>ADMIN</h2>
-        <a class="active" onclick="showSection('overview')">Overview</a>
-        <a onclick="showSection('process')">Process Pipeline</a>
-        <a onclick="showSection('users')">Users</a>
-        <a onclick="showSection('jobs')">Jobs</a>
-        <a onclick="showSection('applications')">Applications</a>
-        <a onclick="showSection('activity')">Activity Logs</a>
+        <a class="active" onclick="showSection(event, 'overview')">Overview</a>
+        <a onclick="showSection(event, 'process')">Process Pipeline</a>
+        <a onclick="showSection(event, 'users')">Users</a>
+        <a onclick="showSection(event, 'jobs')">Jobs</a>
+        <a onclick="showSection(event, 'applications')">Applications</a>
+        <a onclick="showSection(event, 'activity')">Activity Logs</a>
         <a href="#" onclick="logout()">Logout</a>
     </div>
     <div class="main">
@@ -162,21 +172,22 @@
     </div>
 
     <script src="/static/js/main.js"></script>
+    <script src="/static/js/app.js"></script>
     <script>
         async function checkAuth() {
             const user = getUser();
             if (!user || user.role !== 'admin') {
-                window.location.href = '/login.html';
+                window.location.href = '/login';
                 return false;
             }
             return true;
         }
 
-        function showSection(sectionId) {
+        function showSection(evt, sectionId) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.getElementById(sectionId).classList.add('active');
             document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
-            event.target.classList.add('active');
+            evt.currentTarget.classList.add('active');
             if (sectionId === 'users') loadUsers();
             if (sectionId === 'jobs') loadJobs();
             if (sectionId === 'applications') loadApplications();
@@ -322,5 +333,6 @@
             if (await checkAuth()) loadSummary();
         };
     </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </body>
 </html>

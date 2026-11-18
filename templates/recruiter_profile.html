@@ -2,30 +2,47 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recruiter Profile</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body {
+            animation: slideUp 0.8s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(60px);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 <body>
     <div class="sidebar">
         <h2>AI HIRE</h2>
-        <a href="/recruiter_home.html">Home</a>
-        <a href="/recruiter_profile.html">Profile</a>
-        <a href="/post_job.html">Post Job</a>
-        <a href="/recruiter_dashboard.html">Dashboard</a>
-        <a href="/manage_jobs.html">Manage Jobs</a>
+        <a href="/dashboard/recruiter">Home</a>
+        <a href="/recruiter/profile">Profile</a>
+        <a href="/recruiter/jobs/new">Post Job</a>
+        <a href="/dashboard/recruiter/overview">Dashboard</a>
+        <a href="/recruiter/jobs">Manage Jobs</a>
         <a href="#" onclick="logout()">Logout</a>
     </div>
     <div class="main-content">
         <h2>Company Profile</h2>
         <div style="display: flex; gap: 30px; margin-bottom: 30px;">
-            <div>
-                <img id="avatar" src="/static/uploads/default.png" class="avatar">
+            <div class="avatar-wrap">
+                <img id="avatar" src="/static/uploads/default.png" class="avatar" alt="company logo">
                 <label class="upload-btn">
                     Change Logo
                     <input type="file" id="photoInput" accept="image/*" style="display:none">
                 </label>
             </div>
         </div>
+        <div id="profileMessage" class="flash" style="display:none; margin-bottom: 20px;"></div>
         <form id="profileForm" style="max-width: 600px;">
             <input type="text" id="company" placeholder="Company Name" required>
             <input type="text" id="company_type" placeholder="Company Type">
@@ -37,27 +54,63 @@
         </form>
     </div>
     <script src="/static/js/main.js"></script>
+    <script src="/static/js/app.js"></script>
     <script>
+        function showMessage(message, isError = false) {
+            const messageBox = document.getElementById('profileMessage');
+            messageBox.textContent = message;
+            messageBox.style.display = 'block';
+            messageBox.className = `flash ${isError ? 'error' : 'success'}`;
+        }
+
         async function loadProfile() {
-            const res = await fetchWithAuth('/auth/me');
-            const data = await res.json();
-            document.getElementById('company').value = data.company || '';
-            document.getElementById('company_type').value = data.company_type || '';
-            document.getElementById('location').value = data.location || '';
-            document.getElementById('website').value = data.website || '';
-            document.getElementById('hiring_roles').value = data.hiring_roles || '';
-            document.getElementById('email').value = data.email || '';
-            if (data.profile_image) document.getElementById('avatar').src = data.profile_image;
+            try {
+                const res = await fetchWithAuth('/auth/me');
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showMessage(data.error || 'Unable to load profile.', true);
+                    return;
+                }
+
+                document.getElementById('company').value = data.company || '';
+                document.getElementById('company_type').value = data.company_type || '';
+                document.getElementById('location').value = data.location || '';
+                document.getElementById('website').value = data.website || '';
+                document.getElementById('hiring_roles').value = data.hiring_roles || '';
+                document.getElementById('email').value = data.email || '';
+                if (data.profile_image) {
+                    await loadProtectedImage(
+                        document.getElementById('avatar'),
+                        data.profile_image,
+                    );
+                }
+            } catch (err) {
+                showMessage(err.message || 'Unable to load profile.', true);
+            }
         }
         
-        document.getElementById('photoInput').addEventListener('change', async (e) => {
+        document.getElementById('photoInput').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
-                const formData = new FormData();
-                formData.append('profile_image', file);
-                await fetchWithAuth('/users/profile', { method: 'PUT', body: formData });
+                const maxSize = 2 * 1024 * 1024;
+                const lowerName = file.name.toLowerCase();
+                const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+
+                if (!allowedExtensions.some((ext) => lowerName.endsWith(ext))) {
+                    e.target.value = '';
+                    showMessage('Only image files (JPG, JPEG, PNG, GIF) are allowed for the company logo.', true);
+                    return;
+                }
+
+                if (file.size > maxSize) {
+                    e.target.value = '';
+                    showMessage('Company logo must be less than 2MB.', true);
+                    return;
+                }
+
                 const reader = new FileReader();
-                reader.onload = (e) => document.getElementById('avatar').src = e.target.result;
+                reader.onload = (event) => document.getElementById('avatar').src = event.target.result;
                 reader.readAsDataURL(file);
             }
         });
@@ -71,15 +124,29 @@
             formData.append('website', document.getElementById('website').value);
             formData.append('hiring_roles', document.getElementById('hiring_roles').value);
             formData.append('email', document.getElementById('email').value);
+
+            const profilePhoto = document.getElementById('photoInput').files[0];
+            if (profilePhoto) {
+                formData.append('profile_image', profilePhoto);
+            }
             
-            const res = await fetchWithAuth('/users/profile', { method: 'PUT', body: formData });
-            if (res.ok) {
-                alert('Profile saved!');
-                window.location.href = '/recruiter_home.html';
+            try {
+                const res = await fetchWithAuth('/users/profile', { method: 'PUT', body: formData });
+                const data = await res.json();
+
+                if (res.ok) {
+                    showMessage('Profile saved!');
+                    setTimeout(() => window.location.href = '/dashboard/recruiter', 900);
+                } else {
+                    showMessage(data.error || 'Error saving profile.', true);
+                }
+            } catch (err) {
+                showMessage(err.message || 'Error saving profile.', true);
             }
         });
         
         loadProfile();
     </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </body>
 </html>

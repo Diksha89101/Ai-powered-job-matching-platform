@@ -3,16 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <title>Post a Job</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body {
+            animation: slideUp 0.8s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(60px);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 <body>
     <div class="sidebar">
         <h2>AI HIRE</h2>
-        <a href="/recruiter_home.html">Home</a>
-        <a href="/recruiter_profile.html">Profile</a>
-        <a href="/post_job.html">Post Job</a>
-        <a href="/manage_jobs.html">Manage Jobs</a>
-        <a href="/recruiter_dashboard.html">Dashboard</a>
+        <a href="/dashboard/recruiter">Home</a>
+        <a href="/recruiter/profile">Profile</a>
+        <a href="/recruiter/jobs/new">Post Job</a>
+        <a href="/recruiter/jobs">Manage Jobs</a>
+        <a href="/dashboard/recruiter/overview">Dashboard</a>
         <a href="#" onclick="logout()">Logout</a>
     </div>
     <div class="main-content">
@@ -27,6 +42,7 @@
         </form>
     </div>
     <script src="/static/js/main.js"></script>
+    <script src="/static/js/app.js"></script>
     <script>
         document.getElementById('postJobForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -41,12 +57,13 @@
             const res = await fetchWithAuth('/jobs', { method: 'POST', body: JSON.stringify(job) });
             if (res.ok) {
                 alert('Job posted!');
-                window.location.href = '/manage_jobs.html';
+                window.location.href = '/recruiter/jobs';
             } else {
                 const err = await res.json();
                 alert(err.error);
             }
         });
     </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </body>
 </html>

@@ -1,0 +1,419 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700&display=swap');
+
+:root {
+  color-scheme: light;
+  --color-page: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-subtle: #F1F5F9;
+  --color-accent: #588B8B;
+  --color-accent-hover: #456F70;
+  --color-success: #588B8B;
+  --color-warning: #A86A24;
+  --color-text: #151C0D;
+  --color-muted: #526968;
+  --color-border: #D8E4E3;
+  --color-white: #FFFFFF;
+  --color-slate: #588B8B;
+  --color-olive: #151C0D;
+  --color-sand: #FFFFFF;
+  --color-terracotta: #A86A24;
+  --color-active: #E8F1F0;
+  --color-hover-border: #9AB9B8;
+  --color-placeholder: #718482;
+  --color-danger: #A86A24;
+  --color-danger-bg: #FFFFFF;
+  --color-danger-text: #151C0D;
+  --color-success-bg: #E8F1F0;
+  --color-success-text: #588B8B;
+  --color-success-border: #588B8B;
+  --color-success-hover: #D8E8E7;
+  --color-success-hover-border: #9AB9B8;
+  --color-hero-blue: #E8F1F0;
+  --color-hero-indigo: #FFFFFF;
+  --color-overlay: transparent;
+  --font-heading: 'Plus Jakarta Sans', Inter, sans-serif;
+  --font-script: 'Plus Jakarta Sans', Inter, sans-serif;
+  --font-body: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px;
+  --radius-pill: 999px;
+  --shadow-card: 0 8px 24px rgba(21, 28, 13, 0.07);
+  --shadow-elevated: 0 10px 25px -5px rgba(21, 28, 13, 0.12);
+  --shadow-soft: 0 4px 12px rgba(21, 28, 13, 0.05);
+  --focus-ring: 0 0 0 3px rgba(88, 139, 139, 0.22);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  min-height: 100vh !important; height: auto !important; margin: 0;
+  background: var(--color-page) !important; color: var(--color-text) !important;
+  font: 400 15px/1.6 var(--font-body) !important;
+}
+h1,h2,h3,h4,h5,h6 { color: var(--color-text) !important; font-family: var(--font-heading) !important; font-weight: 700; letter-spacing: -.035em; line-height: 1.2; }
+p,li,label,small,figcaption { color: var(--color-muted); }
+a { color: var(--color-muted) !important; }
+header, .navbar, .topbar { color: var(--color-text) !important; background: var(--color-surface) !important; border-bottom: 1px solid var(--color-border) !important; }
+.navbar { min-height: 64px; padding: 12px clamp(16px, 4vw, 48px) !important; position: relative; }
+.navbar a, header nav a { color: var(--color-muted) !important; }
+.navbar > div:last-child { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px 14px; min-width: 0; }
+.navbar a { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: auto !important; min-width: max-content; padding: 8px 10px; border-radius: var(--radius-md) !important; white-space: nowrap; text-decoration: none; }
+.navbar a[aria-current="page"] { color: var(--color-accent) !important; background: var(--color-active) !important; font-weight: 600; }
+.navbar a:hover, header nav a:hover { color: var(--color-accent) !important; }
+#userName { display: none !important; }
+.sidebar {
+  position: fixed !important; inset: 0 auto 0 0; z-index: 5;
+  display: flex; flex-direction: column; align-items: stretch; gap: 8px;
+  width: 260px !important; height: 100vh !important; overflow-y: auto;
+  padding: 24px !important;
+  background: var(--color-surface) !important; border-right: 1px solid var(--color-border) !important;
+  color: var(--color-text) !important; box-shadow: var(--shadow-soft);
+}
+.sidebar #globalBackBtn { position: static !important; inset: auto !important; flex: 0 0 56px; align-self: flex-start; margin: 0 0 8px !important; }
+.sidebar a { display: block; width: 100%; margin: 0 !important; padding: 10px 14px !important; text-decoration: none; }
+.sidebar h2, .sidebar .brand { color: var(--color-muted) !important; }
+.logo, .navbar > div:first-child, a[aria-label="AI Jobs home"] .text-xl {
+  color: var(--color-muted) !important;
+  font: 400 1.9rem/1.1 var(--font-script) !important;
+  letter-spacing: 0 !important;
+}
+.sidebar a { color: var(--color-muted) !important; border-radius: var(--radius-md) !important; transition: background-color 150ms ease, color 150ms ease; }
+.sidebar a.active, .sidebar a[aria-current="page"], .sidebar a:hover { background: var(--color-active) !important; color: var(--color-text) !important; }
+.main, .main-content { color: var(--color-text); }
+.container, .main-content { padding: clamp(16px, 3vw, 36px) !important; }
+.main-content { min-height: 100vh; margin-left: 260px !important; }
+.container { height: auto !important; min-height: calc(100vh - 64px); }
+.card, .stat-card, .job-card, .applicant-card, .section-card, .panel, .auth-card {
+  color: var(--color-text) !important; background: var(--color-surface) !important;
+  border: 1px solid var(--color-border) !important; border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-soft) !important; transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+}
+.card:hover, .job-card:hover, .applicant-card:hover { background: var(--color-surface) !important; border-color: var(--color-hover-border) !important; box-shadow: var(--shadow-card) !important; transform: translateY(-2px) !important; }
+.card p, .job-card p, .stat-card p, .section p { color: var(--color-muted); }
+input, select, textarea {
+  color: var(--color-text) !important; background: var(--color-subtle) !important;
+  border: 1px solid var(--color-border) !important; border-radius: var(--radius-md) !important;
+  font: 400 14px/1.5 var(--font-body) !important; min-height: 42px; padding: 10px 12px !important;
+}
+input::placeholder, textarea::placeholder { color: var(--color-placeholder) !important; }
+input:focus, select:focus, textarea:focus { outline: none !important; border-color: var(--color-accent) !important; box-shadow: var(--focus-ring) !important; }
+button, .btn, .primary-btn, [role="button"] {
+  color: #FFFFFF !important; background: var(--color-accent) !important; border: 1px solid var(--color-accent) !important;
+  border-radius: var(--radius-md) !important; font: 600 14px var(--font-body) !important;
+  padding: 10px 16px !important; transition: background-color 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+}
+button:hover, .btn:hover, .primary-btn:hover, [role="button"]:hover { background: var(--color-accent-hover) !important; border-color: var(--color-accent-hover) !important; }
+#globalBackBtn {
+  position: fixed !important;
+  top: 16px !important;
+  left: 16px !important;
+  width: 56px !important;
+  height: 56px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--color-muted) !important;
+}
+#globalBackBtn:hover { background: transparent !important; border: 0 !important; color: var(--color-text) !important; transform: translateX(-3px) scale(1.08) !important; }
+#globalBackBtn svg { display: block; width: 48px !important; height: 48px !important; }
+#globalBackBtn svg [stroke] { stroke: currentColor !important; }
+/* Keep the fixed back arrow clear of the navbar brand. */
+.navbar > div:first-child,
+.navbar > .logo { margin-left: 64px !important; }
+body:has(#globalBackBtn) header a[aria-label="AI Jobs home"] { margin-left: 64px; }
+button:focus-visible, a:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.btn-secondary, .secondary-btn, button.secondary { background: var(--color-surface) !important; color: var(--color-text) !important; border-color: var(--color-border) !important; }
+.btn-danger, .danger { background: var(--color-danger) !important; border-color: var(--color-danger) !important; }
+.badge, .admin-badge { border-radius: var(--radius-pill) !important; font-weight: 600; }
+.badge-active, .badge-applied, .badge-success, .applied-badge { background: var(--color-success-bg) !important; color: var(--color-success) !important; }
+.badge-inactive, .badge-rejected { background: var(--color-danger-bg) !important; color: var(--color-danger-text) !important; }
+.data-table { background: var(--color-surface) !important; border: 1px solid var(--color-border); border-radius: var(--radius-lg) !important; }
+.data-table th { background: var(--color-subtle) !important; color: var(--color-muted) !important; }
+.data-table td { color: var(--color-text); }
+.data-table tr { border-color: var(--color-border) !important; }
+.data-table tr:hover { background: var(--color-page) !important; }
+.dropdown { background: var(--color-surface) !important; border: 1px solid var(--color-border); border-radius: var(--radius-lg) !important; box-shadow: var(--shadow-elevated); }
+.dropdown a { color: var(--color-text) !important; }
+.dropdown a:hover { background: var(--color-subtle) !important; }
+.mini-circle { position: relative; flex: 0 0 80px; width: 80px; height: 80px; }
+.mini-circle svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.mini-circle .bg { fill: none; stroke: var(--color-border) !important; stroke-width: 6; }
+.mini-circle .progress { stroke: var(--color-accent) !important; }
+.mini-circle[data-match-level="high"] .progress { stroke: var(--color-success) !important; }
+.mini-circle[data-match-level="medium"] .progress { stroke: var(--color-accent) !important; }
+.mini-circle[data-match-level="low"] .progress { stroke: var(--color-warning) !important; }
+.mini-circle .progress { fill: none; stroke-width: 6; stroke-linecap: round; }
+.mini-text { position: absolute; inset: 0; display: grid; place-items: center; color: var(--color-text) !important; font-size: 14px; font-weight: 600; }
+.flash.success { background: var(--color-success-bg) !important; color: var(--color-success-text) !important; }
+.flash.error { background: var(--color-danger-bg) !important; color: var(--color-danger-text) !important; }
+.btn-applied, button.btn-applied, .applied-badge { background: var(--color-success-bg) !important; color: var(--color-success) !important; border-color: var(--color-success-border) !important; }
+.btn-applied:hover, button.btn-applied:hover { background: var(--color-success-hover) !important; border-color: var(--color-success-hover-border) !important; }
+.btn-apply, button.btn-apply, .btn-view, button.btn-view { background: var(--color-accent) !important; color: var(--color-text) !important; border-color: var(--color-accent) !important; }
+.btn-apply:hover, button.btn-apply:hover, .btn-view:hover, button.btn-view:hover { background: var(--color-accent-hover) !important; }
+.roles { padding: clamp(32px, 6vw, 72px) 20px !important; }
+.role-container { gap: 24px !important; }
+.role-container .card { width: min(100%, 340px) !important; min-height: 360px !important; }
+.auth-card, .card:has(form) { width: min(100% - 32px, 520px) !important; padding: clamp(24px, 5vw, 40px) !important; margin: 24px auto; box-shadow: var(--shadow-elevated) !important; }
+.toggle, .role-switcher { position: relative; z-index: 10000 !important; isolation: isolate; display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-accent); }
+.toggle button, .role-switcher button { background: transparent !important; color: var(--color-text) !important; border: 0 !important; }
+.toggle > button, .role-switcher > button { position: relative; z-index: 1; pointer-events: auto !important; cursor: pointer !important; }
+.toggle button.active, .role-switcher button.active { background: var(--color-surface) !important; color: var(--color-text) !important; box-shadow: var(--shadow-soft); }
+.toggle { width: min(100%, 420px) !important; }
+.toggle > *, .role-switcher > * { flex: 1 1 0; min-width: 0; text-align: center; }
+.auth-card form, .card:has(form) form { width: 100%; }
+#profileForm {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 16px 18px;
+  width: min(100%, 680px) !important;
+  max-width: 680px !important;
+  margin: 22px auto 0;
+  padding: clamp(22px, 4vw, 34px);
+  box-sizing: border-box;
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-elevated);
+}
+#profileForm input,
+#profileForm select { min-height: 48px; background: var(--color-surface) !important; }
+#profileForm textarea { background: var(--color-surface) !important; }
+#profileForm > * { width: 100% !important; min-width: 0; margin: 0 !important; }
+#profileForm #skills,
+#profileForm #location,
+#profileForm #hiring_roles,
+#profileForm #resumeLabel,
+#profileForm #resumeWrap { grid-column: 1 / -1; }
+#profileForm #skills, #profileForm #location, #profileForm #hiring_roles { min-height: 112px; }
+#profileForm #resumeLabel { margin-bottom: -10px !important; }
+#profileForm #resumeWrap { display: flex; align-items: center; gap: 12px; }
+#profileForm #resumeWrap { min-height: 58px; border: 1px solid var(--color-border) !important; border-radius: var(--radius-md) !important; background: var(--color-subtle) !important; padding: 8px 10px !important; }
+#profileForm #resumeBtn { flex: 0 0 auto; }
+#profileForm #resumeBtn { color: var(--color-text) !important; background: var(--color-surface) !important; border-color: var(--color-border) !important; }
+#profileForm #resumeFileName { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#profileForm button[type="submit"] { grid-column: 1 / -1; justify-self: start; width: auto !important; margin-top: 4px !important; }
+.main-content > h2:first-child { width: min(100%, 680px); margin: 0 auto 16px !important; }
+.main-content > h2:first-child + div[style*="display: flex"] { width: min(100%, 680px); margin: 0 auto !important; justify-content: center; }
+.avatar-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.avatar-wrap .avatar { width: 112px; height: 112px; border-radius: 50%; object-fit: cover; }
+.avatar-wrap .upload-btn { cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 8px 13px; border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: var(--color-subtle); color: var(--color-muted); }
+.sidebar a[href="/recruiter/profile"] { background: var(--color-active) !important; color: var(--color-accent) !important; font-weight: 600; }
+.hero { background: radial-gradient(ellipse at 15% 10%, var(--color-hero-blue) 0%, transparent 38%), radial-gradient(ellipse at 90% 20%, var(--color-hero-indigo) 0%, transparent 34%), var(--color-page) !important; }
+.hero h1, .hero h2 { color: var(--color-text) !important; }
+/* Normalize legacy utility classes used by the landing page. */
+.bg-ink, .bg-white\/5, .bg-white\/10 { background-color: var(--color-page) !important; }
+.text-white, .text-white\/80, .text-white\/90 { color: var(--color-text) !important; }
+.text-indigo-300, .text-indigo-400, .text-indigo-500, .text-violet-400 { color: var(--color-muted) !important; }
+.text-violet-100\/80, .text-violet-100\/60, .text-violet-200 { color: var(--color-muted) !important; }
+.bg-gradient-to-r { background: var(--color-accent) !important; }
+.bg-gradient-to-r.text-white { color: var(--color-text) !important; }
+.bg-gradient-to-br { background: linear-gradient(135deg, var(--color-hero-blue), var(--color-hero-indigo)) !important; }
+.border-white\/10 { border-color: var(--color-border) !important; }
+main.bg-hero-pattern { background: radial-gradient(ellipse at 12% 5%, var(--color-hero-blue) 0%, transparent 42%), radial-gradient(ellipse at 90% 18%, var(--color-hero-indigo) 0%, transparent 36%), var(--color-page) !important; }
+body > main > div.absolute:first-child { background: var(--color-overlay) !important; backdrop-filter: none !important; }
+/* The landing page still carries legacy Tailwind arbitrary-color classes. */
+#contact { background: var(--color-page) !important; border-color: var(--color-border) !important; }
+#contact > div { background: var(--color-surface) !important; border: 1px solid var(--color-border) !important; border-radius: var(--radius-lg) !important; box-shadow: var(--shadow-card) !important; }
+#contact .text-violet-200, #contact .text-violet-100\/80 { color: var(--color-muted) !important; }
+#contact a.bg-white\/5 { color: var(--color-muted) !important; background: var(--color-surface) !important; border-color: var(--color-border) !important; }
+footer { border-color: var(--color-border) !important; }
+/* Normalize legacy inline and utility colors to the four-color palette. */
+body *[style*="color:"] { color: var(--color-text) !important; }
+body *[style*="background:"], body *[style*="background-color:"] { background-color: var(--color-surface) !important; background-image: none !important; }
+body *[style*="border:"], body *[style*="border-color:"] { border-color: var(--color-border) !important; }
+body *[style*="box-shadow:"] { box-shadow: none !important; }
+svg [fill]:not([fill="none"]) { fill: currentColor !important; }
+svg [stroke] { stroke: var(--color-accent) !important; }
+/* Keep the gauge track muted and preserve the progress dash values set from its score. */
+svg.app-match-gauge-svg circle:first-child { stroke: var(--color-border) !important; }
+svg.app-match-gauge-svg circle:last-child { stroke: var(--match-color, var(--color-accent)) !important; }
+body [class*="bg-[#"], body [class*="bg-white"], body [class*="bg-violet-"], body [class*="bg-indigo-"], body [class*="bg-emerald-"], body [class*="bg-blue-"], body [class*="bg-slate-"], body [class*="bg-gray-"] { background-color: var(--color-surface) !important; background-image: none !important; }
+body [class*="text-white"], body [class*="text-violet-"], body [class*="text-indigo-"], body [class*="text-emerald-"], body [class*="text-blue-"], body [class*="text-slate-"], body [class*="text-gray-"], body [class*="text-green-"], body [class*="text-red-"], body [class*="text-amber-"] { color: var(--color-text) !important; }
+body [class*="border-white"], body [class*="border-violet-"], body [class*="border-indigo-"], body [class*="border-blue-"], body [class*="border-slate-"] { border-color: var(--color-border) !important; }
+body * { color: var(--color-text) !important; }
+body a { color: var(--color-muted) !important; }
+body #profileForm button[type="submit"] { color: #FFFFFF !important; background: var(--color-accent) !important; border-color: var(--color-accent) !important; }
+body #profileForm button[type="submit"]:hover { background: var(--color-accent-hover) !important; border-color: var(--color-accent-hover) !important; transform: translateY(-1px); }
+body #profileForm #resumeBtn { color: var(--color-text) !important; background: var(--color-surface) !important; border-color: var(--color-border) !important; }
+body .avatar-wrap .upload-btn { color: var(--color-muted) !important; }
+body .main-content:has(#profileForm) { background: var(--color-page) !important; }
+/* Job details dialog: override the legacy dark-purple dashboard modal. */
+#jobModal.modal-overlay { padding: 20px; background: rgba(21, 28, 13, 0.52) !important; backdrop-filter: blur(3px); }
+#jobModal .modal-content { width: min(100%, 680px) !important; max-width: 680px !important; max-height: min(86vh, 820px) !important; overflow-y: auto; padding: clamp(22px, 4vw, 34px) !important; color: var(--color-text) !important; background: var(--color-surface) !important; border: 1px solid var(--color-border) !important; border-radius: var(--radius-xl) !important; box-shadow: var(--shadow-elevated) !important; }
+#jobModal .modal-header { gap: 16px; margin-bottom: 20px; }
+#jobModal .modal-header h3 { color: var(--color-text) !important; font: 700 clamp(20px, 3vw, 26px)/1.25 var(--font-heading) !important; }
+#jobModal .modal-close { display: grid; place-items: center; flex: 0 0 40px; width: 40px; height: 40px; padding: 0 !important; color: var(--color-muted) !important; background: var(--color-subtle) !important; border: 1px solid var(--color-border) !important; border-radius: var(--radius-md) !important; font-size: 22px !important; }
+#jobModal .modal-close:hover { color: var(--color-text) !important; background: var(--color-active) !important; }
+#jobModal #modalBody { color: var(--color-text) !important; }
+#jobModal #modalBody p { margin: 0 0 10px; color: var(--color-muted) !important; line-height: 1.65; }
+#jobModal #modalBody .label { color: var(--color-text) !important; font-weight: 600; }
+#jobModal #modalBody hr { border: 0; border-top: 1px solid var(--color-border) !important; margin: 18px 0 !important; }
+#jobModal #modalActions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+#jobModal #modalActions button { min-width: 96px; }
+#jobModal #modalActions .btn-close { color: var(--color-text) !important; background: var(--color-subtle) !important; border-color: var(--color-border) !important; }
+#jobModal #modalActions .btn-close:hover { background: var(--color-active) !important; }
+#jobModal #modalApplyBtn { color: #FFFFFF !important; }
+/* Make the application status easy to scan on each applied-job card. */
+#appliedJobsList .card { position: relative; min-height: 168px; padding: 24px !important; }
+#appliedJobsList .card h3 { max-width: calc(100% - 150px); margin: 0 0 12px; font-size: 20px; }
+#appliedJobsList .card > p:first-of-type { margin: 0 0 14px; color: var(--color-muted) !important; }
+#appliedJobsList .card > p:nth-of-type(2) { position: absolute; top: 20px; right: 24px; display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 7px 12px; color: var(--color-accent) !important; background: var(--color-active) !important; border: 1px solid var(--color-border); border-radius: var(--radius-pill); font-size: 13px; font-weight: 700; text-transform: capitalize; }
+#appliedJobsList .card > p:nth-of-type(2)::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--color-accent); }
+#appliedJobsList .card > small { display: block; padding-top: 12px; border-top: 1px solid var(--color-border); color: var(--color-muted) !important; }
+/* Keep the seeker dashboard sidebar in the page layout so it cannot cover the match ring. */
+body:has(.sidebar):has(#jobList) { display: flex !important; min-height: 100vh !important; height: auto !important; align-items: stretch; }
+body:has(.sidebar):has(#jobList) .sidebar { position: sticky !important; top: 0 !important; inset: auto !important; flex: 0 0 260px; width: 260px !important; height: 100vh !important; align-self: flex-start; }
+body:has(.sidebar):has(#jobList) .main { flex: 1 1 0; width: auto !important; min-width: 0; margin: 0 !important; padding: clamp(24px, 4vw, 48px) !important; }
+body:has(.sidebar):has(#jobList) #jobList { display: grid; gap: 16px; }
+body:has(.sidebar):has(#jobList) #jobList .job-card { display: flex; align-items: center; gap: 18px; min-width: 0; padding: 20px; }
+body:has(.sidebar):has(#jobList) #jobList .job-info { min-width: 0; }
+body:has(.sidebar):has(#jobList) #jobList .mini-circle { flex-basis: 100px; width: 100px; height: 100px; }
+body:has(.sidebar):has(#jobList) #jobList .mini-circle svg { display: block; }
+body:has(.sidebar):has(#jobList) #jobList .mini-text { transform: translateY(-5px); }
+body:has(.sidebar):has(#jobList) #jobList .mini-circle::after { content: "match score"; position: absolute; inset: 57px 0 auto; text-align: center; font-size: 10px; line-height: 1.2; color: var(--color-muted) !important; pointer-events: none; }
+body:has(.sidebar):has(#jobList) #jobList .job-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+@media (min-width: 769px) and (max-width: 1024px) {
+  .main, .main-content { padding: 16px !important; }
+}
+@media (max-width: 768px) {
+  body:has(.sidebar) { display: block !important; }
+  .sidebar { position: sticky !important; inset: auto !important; display: flex; flex-direction: row; align-items: center; flex-wrap: wrap; top: 0; width: 100% !important; height: auto !important; padding: 10px 16px !important; border-right: 0 !important; border-bottom: 1px solid var(--color-border) !important; }
+  .sidebar h2 { margin: 0 0 8px !important; }
+  .sidebar a { display: inline-flex !important; width: auto !important; flex: 0 0 auto; margin: 3px !important; padding: 8px 10px !important; }
+  .main, .main-content { margin-left: 0 !important; width: 100%; padding: 20px !important; }
+  body:has(.sidebar):has(#jobList) { display: flex !important; flex-direction: column; }
+  body:has(.sidebar):has(#jobList) .sidebar { position: sticky !important; top: 0 !important; z-index: 20; flex: 0 0 auto; width: 100% !important; height: auto !important; }
+  body:has(.sidebar):has(#jobList) .main { width: 100% !important; padding: 20px !important; }
+  body:has(.sidebar):has(#jobList) #jobList .job-card { align-items: flex-start; flex-wrap: wrap; }
+  body:has(.sidebar):has(#jobList) #jobList .job-info { flex: 1 1 calc(100% - 120px) !important; }
+  body:has(.sidebar):has(#jobList) #jobList .job-actions { width: 100%; margin-left: 0; }
+}
+@media (max-width: 640px) {
+  .navbar { flex-wrap: wrap; align-items: center; gap: 8px; }
+  .navbar > div:last-child { width: 100%; justify-content: flex-start; gap: 4px 8px; }
+  .navbar > div:first-child, .navbar > .logo { margin-left: 56px !important; }
+  body:has(#globalBackBtn) header a[aria-label="AI Jobs home"] { margin-left: 56px; }
+  .toggle, .role-switcher { width: min(100%, 420px) !important; }
+  .container, .main-content, .main { padding: 16px !important; }
+  .job-card { align-items: flex-start !important; flex-wrap: wrap; gap: 14px; }
+  .search-bar { gap: 8px !important; }
+  .search-bar > * { flex: 1 1 100%; }
+  .data-table { display: block; overflow-x: auto; }
+  #appliedJobsList .card { min-height: 0; padding: 20px !important; }
+  #appliedJobsList .card h3 { max-width: 100%; padding-right: 0; }
+  #appliedJobsList .card > p:nth-of-type(2) { position: static; justify-self: start; margin: 0 0 14px; }
+  .role-container .card { min-height: 300px !important; }
+  #profileForm { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  #profileForm > * { grid-column: 1 / -1; }
+}
+
+/* Shared slide-out navigation for every page that has a sidebar or navbar. */
+.slide-menu {
+  position: fixed !important; inset: 0 auto 0 0 !important; z-index: 1000 !important;
+  display: flex !important; flex-direction: column !important; align-items: stretch !important;
+  justify-content: flex-start !important; gap: 14px !important;
+  width: 260px !important; height: 100vh !important; max-height: 100vh !important;
+  margin: 0 !important; padding: 20px 16px !important; overflow-x: hidden; overflow-y: auto;
+  background: var(--color-surface) !important; border-right: 1px solid var(--color-border) !important;
+  box-shadow: var(--shadow-elevated) !important;
+  transform: translateX(-100%); transition: transform 180ms ease;
+}
+.slide-menu:hover, .slide-menu:focus-within, .slide-menu.menu-open { transform: translateX(0); }
+.slide-menu-toggle {
+  position: fixed; top: 76px; left: 8px; z-index: 10002;
+  display: grid; place-items: center; flex: 0 0 36px;
+  width: 36px !important; height: 36px; min-height: 36px; margin: 0 !important; padding: 0 !important;
+  color: var(--color-text) !important; background: var(--color-surface) !important;
+  border: 1px solid var(--color-border) !important; border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-soft); cursor: pointer;
+}
+.slide-menu-toggle svg { display: block; width: 18px !important; height: 18px !important; }
+.navbar.slide-menu > div:first-child { flex: 0 0 auto; margin: 0 0 10px 64px !important; padding-top: 2px; }
+.sidebar.slide-menu > h2:first-of-type { margin-left: 56px !important; }
+.navbar.slide-menu > div:last-child,
+.navbar.slide-menu nav,
+.navbar.slide-menu .nav-right { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 8px; width: 100%; }
+.navbar.slide-menu a { justify-content: flex-start; width: 100% !important; min-width: 0; padding: 10px 12px; }
+#loginHomeLink { position: fixed; top: 16px; right: 24px; z-index: 10003; display: inline-flex; align-items: center; min-height: 40px; padding: 8px 14px; color: var(--color-accent) !important; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); font-weight: 600; text-decoration: none; }
+#loginHomeLink:hover { background: var(--color-active); }
+.sidebar.slide-menu a { display: flex; align-items: center; width: 100% !important; padding: 10px 12px !important; }
+.dashboard-heading { margin: 0 0 16px !important; font-size: clamp(24px, 3vw, 30px) !important; }
+.slide-menu a { min-height: 40px; text-decoration: none; white-space: nowrap; }
+.slide-menu a[aria-current="page"], .slide-menu a.active { color: var(--color-accent) !important; background: var(--color-active) !important; font-weight: 600; }
+body:has(.slide-menu.sidebar) .main,
+body:has(.slide-menu.sidebar) .main-content,
+body:has(.slide-menu.navbar) .container { width: 100% !important; margin-left: 0 !important; }
+body:has(.sidebar):has(#jobList) .sidebar.slide-menu { position: fixed !important; inset: 0 auto 0 0 !important; flex: 0 0 260px !important; align-self: auto; }
+body:has(.sidebar):has(#jobList) .main { flex: 1 1 100% !important; width: 100% !important; min-width: 0; margin: 0 !important; }
+body:has(> header.slide-menu:not(.navbar)) main,
+body:has(> header.slide-menu:not(.navbar)) footer { width: 100%; margin-left: 0; }
+body > header.slide-menu:not(.navbar) > div {
+  display: flex !important; flex-direction: column !important; align-items: stretch !important;
+  justify-content: flex-start !important; gap: 14px !important; width: auto !important;
+  max-width: none !important; margin: 0 !important; padding: 72px 0 0 !important;
+}
+body > header.slide-menu:not(.navbar) > div > a { margin-left: 58px; }
+body > header.slide-menu:not(.navbar) nav { display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: 8px !important; }
+#globalBackBtn { z-index: 10001 !important; width: 40px !important; height: 40px !important; }
+#globalBackBtn svg { width: 32px !important; height: 32px !important; }
+@media (max-width: 640px) {
+  .slide-menu { width: 244px !important; transform: translateX(-100%); padding: 16px 12px !important; }
+  .slide-menu-toggle { top: 70px; left: 8px; width: 32px !important; height: 32px; min-height: 32px; flex-basis: 32px; }
+  .slide-menu-toggle svg { width: 16px !important; height: 16px !important; }
+  .navbar.slide-menu > div:first-child { margin-left: 56px !important; }
+  body:has(.slide-menu.sidebar) .main,
+  body:has(.slide-menu.sidebar) .main-content,
+  body:has(.slide-menu.navbar) .container { width: 100% !important; margin-left: 0 !important; }
+  body:has(> header.slide-menu:not(.navbar)) main,
+  body:has(> header.slide-menu:not(.navbar)) footer { width: 100%; margin-left: 0; }
+  body > header.slide-menu:not(.navbar) > div { padding-top: 70px !important; }
+  body > header.slide-menu:not(.navbar) > div > a { margin-left: 48px; }
+  #globalBackBtn { width: 36px !important; height: 36px !important; }
+  #globalBackBtn svg { width: 28px !important; height: 28px !important; }
+}
+body:has(#searchInput):has(#locationFilter) .slide-menu-toggle { top: 12px; left: 10px; }
+body:has(#searchInput):has(#locationFilter) #globalBackBtn { top: 70px !important; left: 28px !important; }
+body:has(#searchInput):has(#locationFilter) .container { padding-top: 74px !important; }
+body:has(#searchInput):has(#locationFilter) .container > h2:first-child { margin: 0 0 22px 56px !important; }
+body:has(#jobList) .slide-menu-toggle { top: 12px; left: 10px; }
+body:has(#jobList) #globalBackBtn { top: 38px !important; left: 14px !important; }
+body:has(#jobForm) #globalBackBtn,
+body:has(#jobForm) .slide-menu-toggle,
+body:has(form[onsubmit="registerUser(event)"]) #globalBackBtn,
+body:has(form[onsubmit="registerUser(event)"]) .slide-menu-toggle,
+body:has(form[onsubmit="registerRecruiter(event)"]) #globalBackBtn,
+body:has(form[onsubmit="registerRecruiter(event)"]) .slide-menu-toggle { display: none !important; }
+body:has(#jobForm) .navbar.slide-menu,
+body:has(form[onsubmit="registerRecruiter(event)"]) .navbar.slide-menu {
+  position: relative !important; inset: auto !important; z-index: 10 !important;
+  flex-direction: row !important; align-items: center !important; justify-content: space-between !important;
+  width: 100% !important; height: 72px !important; max-height: none !important; margin: 0 !important;
+  padding: 0 40px !important; overflow: visible; transform: none !important; box-shadow: none !important;
+}
+body:has(#jobForm) .navbar.slide-menu > div:first-child,
+body:has(form[onsubmit="registerRecruiter(event)"]) .navbar.slide-menu > div:first-child { margin: 0 !important; }
+body:has(form[onsubmit="registerRecruiter(event)"]) .navbar.slide-menu nav { flex-direction: row; justify-content: flex-end; width: auto; }
+body:has(#jobForm) .container,
+body:has(form[onsubmit="registerRecruiter(event)"]) .container { width: 100% !important; margin-left: 0 !important; }
+
+/* Job seeker home: keep the menu control above the page title and the back
+   arrow in the title row, rather than letting the three controls overlap. */
+body:has(#welcomeName) .slide-menu-toggle {
+  top: 12px !important;
+  left: 12px !important;
+}
+body:has(#welcomeName) #globalBackBtn {
+  top: 58px !important;
+  left: 12px !important;
+}
+body:has(#welcomeName) .container > h1 {
+  margin-left: 54px !important;
+  padding-top: 0 !important;
+}
+body:has(#welcomeName) .container {
+  padding-top: 50px !important;
+}

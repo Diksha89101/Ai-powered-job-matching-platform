@@ -18,7 +18,8 @@
 body {
     display: flex;
     height: 100vh;
-    background:  #1D0936;
+    background: #1D0936;
+    animation: slideUp 0.8s ease-out;
     color: white;
 }
 
@@ -133,16 +134,28 @@ body {
     font-weight: bold;
 }
     </style>
+    <style>
+        @keyframes slideUp {
+            from {
+                transform: translateY(60px);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 
 <body>
-
+ 
     <!-- SIDEBAR -->
     <div class="sidebar">
         <h2>AI HIRE</h2>
-        <a href="/recruiter_profile.html">Profile</a>
-        <a href="/recruiter_dashboard.html">Dashboard</a>
-        <a href="/post_job.html">Post Job</a>
+        <a href="/recruiter/profile">Profile</a>
+        <a href="/dashboard/recruiter/overview">Dashboard</a>
+        <a href="/recruiter/jobs/new">Post Job</a>
         <a href="javascript:void(0)" onclick="logout()">Logout</a>
     </div>
 
@@ -151,7 +164,7 @@ body {
 
         <div class="topbar">
             <h2>All Applicants 👋</h2>
-            <button class="btn" onclick="go('/post_job.html')">Post New Job</button>
+            <button class="btn" onclick="go('/recruiter/jobs/new')">Post New Job</button>
         </div>
 
         <!-- APPLICANTS LIST -->
@@ -163,6 +176,7 @@ body {
     </div>
 
     <script src="/static/js/main.js"></script>
+    <script src="/static/js/app.js"></script>
     <script>
         function go(path) {
             window.location.href = path;
@@ -221,7 +235,7 @@ body {
         async function loadRecruiterDashboard() {
             const user = getUser();
             if (!user) {
-                window.location.href = '/login.html';
+                window.location.href = '/login';
                 return;
             }
 
@@ -247,6 +261,7 @@ body {
 
         window.onload = loadRecruiterDashboard;
     </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </body>
 
 </html>

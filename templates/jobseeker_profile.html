@@ -3,16 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <title>Job Seeker Profile</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body {
+            animation: slideUp 0.8s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(60px);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 <body>
     <div class="sidebar">
-        <h2>AI JOB</h2>
-        <a href="jobseeker_home.html">Home</a>
-        <a href="seeker_dashboard.html">Dashboard</a>
-        <a href="browse_jobs.html">Browse Jobs</a>
-        <a href="applied_jobs.html">Applied Jobs</a>
-        <a href="notifications.html">Notifications</a>
+        <h2>AI Jobs</h2>
+        <a href="/dashboard">Home</a>
+        <a href="/dashboard/seeker">Dashboard</a>
+        <a href="/jobs">Browse Jobs</a>
+        <a href="/jobs/applied">Applied Jobs</a>
+        <a href="/notifications">Notifications</a>
         <a href="#" onclick="logout()">Logout</a>
     </div>
     <div class="main-content">
@@ -47,6 +62,7 @@
         </form>
     </div>
     <script src="/static/js/main.js"></script>
+    <script src="/static/js/app.js"></script>
     <script>
         function renderResumeInsights(data) {
             // Resume insights processing remains active, but the UI panel is hidden.
@@ -62,7 +78,10 @@
             document.getElementById('skills').value = data.skills || '';
             document.getElementById('experience').value = data.experience || '';
             if (data.profile_image) {
-                document.getElementById('avatar').src = data.profile_image;
+                await loadProtectedImage(
+                    document.getElementById('avatar'),
+                    data.profile_image,
+                );
             }
 
             const resumeFileName = document.getElementById('resumeFileName');
@@ -138,7 +157,7 @@
             if (res.ok) {
                 renderResumeInsights(data);
                 showMessage(data.resume_parse_message || 'Profile saved!');
-                setTimeout(() => window.location.href = '/seeker_dashboard.html', 900);
+                setTimeout(() => window.location.href = '/dashboard/seeker', 900);
             } else {
                 showMessage(data.error || 'Error saving profile', true);
             }
@@ -174,5 +193,6 @@
 
         loadProfile();
     </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </body>
 </html>

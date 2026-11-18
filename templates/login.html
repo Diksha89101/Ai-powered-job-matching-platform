@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Job Platform - Login</title>
+    <title>AI Jobs - Login</title>
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { height: 100vh; background: #1D0936; color: white; }
+        body { height: 100vh; background: #1D0936; color: white; animation: slideUp 0.8s ease-out; }
 
         .navbar {
             height: 72px;
@@ -107,15 +107,46 @@
             margin-bottom: 12px;
             display: none;
         }
+
+        #loginHomeLink {
+            position: absolute;
+            top: 12px;
+            right: 28px;
+            padding: 12px 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .account-note {
+            color: #cbd5f5;
+            font-size: 13px;
+            text-align: center;
+            margin: -18px 0 18px;
+        }
     </style>
+    <style>
+        @keyframes slideUp {
+            from {
+                transform: translateY(60px);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 
 <body>
-
+ 
 <header class="navbar">
-    <div>AI JOB</div>
-    <nav><a href="/landing.html">About</a></nav>
+    <div>AI Jobs</div>
 </header>
+
+<a id="loginHomeLink" href="/">Home</a>
 
 <div class="container">
 
@@ -126,6 +157,7 @@
     </div>
 
     <div class="card">
+        <p class="account-note" id="accountNote">Sign in to your job seeker account.</p>
 
         <!-- Job Seeker -->
         <form id="jobForm" class="form active" onsubmit="handleLogin(event, 'jobseeker')">
@@ -136,11 +168,11 @@
             <button type="submit" class="primary-btn">Login</button>
 
             <div class="footer-text">
-                <a href="forgot-password.html">Forgot Password?</a>
+                <a href="/forgot-password">Forgot Password?</a>
             </div>
 
             <div class="footer-text">
-                Don't have account? <a href="register_jobseeker.html">Register</a>
+                Don't have account? <a href="/register/seeker">Register</a>
             </div>
         </form>
 
@@ -153,11 +185,11 @@
             <button type="submit" class="primary-btn">Login</button>
 
             <div class="footer-text">
-                <a href="forgot-password.html">Forgot Password?</a>
+                <a href="/forgot-password">Forgot Password?</a>
             </div>
 
             <div class="footer-text">
-                Don't have account? <a href="register_recruiter.html">Register</a>
+                Don't have account? <a href="/register/recruiter">Register</a>
             </div>
         </form>
 
@@ -176,6 +208,8 @@
     </div>
 </div>
 
+<script src="/static/js/main.js"></script>
+<script src="/static/js/app.js"></script>
 <script>
 
     const API_URL = "/api";
@@ -198,6 +232,12 @@
         } else {
             document.querySelectorAll(".tab")[2].classList.add("active");
         }
+        const labels = {
+            job: 'Sign in to your job seeker account.',
+            recruiter: 'Sign in to your recruiter account.',
+            admin: 'Sign in to your administrator account.'
+        };
+        document.getElementById('accountNote').textContent = labels[type];
     }
 
     async function handleLogin(event, role) {
@@ -209,7 +249,7 @@
 
         const password = document.getElementById(
             role === 'jobseeker' ? 'jobPass' : role === 'recruiter' ? 'recPass' : 'adminPass'
-        ).value.trim();
+        ).value;
 
         const errorDiv = document.getElementById(
             role === 'jobseeker' ? 'jobError' : role === 'recruiter' ? 'recError' : 'adminError'
@@ -239,11 +279,11 @@
 
             // Redirect
             if (role === "jobseeker") {
-                window.location.href = "jobseeker_home.html";
+                window.location.href = "/dashboard";
             } else if (role === "recruiter") {
-                window.location.href = "recruiter_home.html";
+                window.location.href = "/dashboard/recruiter";
             } else if (role === "admin") {
-                window.location.href = "admin_dashboard.html";
+                window.location.href = "/dashboard/admin";
             }
 
         } catch (err) {
@@ -254,5 +294,6 @@
 
 </script>
 
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </body>
 </html>

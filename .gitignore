@@ -16,6 +16,7 @@ __pycache__/
 # Local uploads / user data
 uploads/*
 !uploads/.gitkeep
+instance/
 static/uploads/*
 !static/uploads/.gitkeep
 static/profile-images/*

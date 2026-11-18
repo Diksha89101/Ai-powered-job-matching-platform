@@ -4,15 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notifications</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body {
+            animation: slideUp 0.8s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(60px);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 <body>
     <div class="sidebar">
-        <h2>AI JOB</h2>
-        <a href="/jobseeker_home.html">Home</a>
-        <a href="/browse_jobs.html">Browse Jobs</a>
-        <a href="/applied_jobs.html">Applied Jobs</a>
-        <a href="/notifications.html">Notifications</a>
+        <h2>AI Jobs</h2>
+        <a href="/dashboard">Home</a>
+        <a href="/jobs">Browse Jobs</a>
+        <a href="/jobs/applied">Applied Jobs</a>
+        <a href="/notifications">Notifications</a>
         <a href="#" onclick="logout()">Logout</a>
     </div>
 
@@ -22,6 +37,7 @@
     </div>
 
     <script src="/static/js/main.js"></script>
+    <script src="/static/js/app.js"></script>
     <script>
         async function loadNotifications() {
             const list = document.getElementById('notificationList');
@@ -50,5 +66,6 @@
 
         loadNotifications();
     </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </body>
 </html>
