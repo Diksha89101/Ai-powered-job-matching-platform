@@ -4,6 +4,7 @@ venv/
 __pycache__/
 *.pyc
 .pytest_cache/
+.test-tmp/
 
 # Environment
 .env
@@ -25,3 +26,8 @@ static/profile-images/*
 # Test / coverage
 .coverage
 htmlcov/
+
+# Pytest temporary directories
+test_temp/
+pytest_temp/
+.test-tmp/
