@@ -1,0 +1,628 @@
+@import url("./theme.css");
+
+/* ==========================================================================
+   animations.css — premium motion + micro-interaction layer
+   --------------------------------------------------------------------------
+   DROP-IN: save as  static/css/animations.css
+   Load it LAST in <head> (after each page's inline <style> and style.css).
+
+   Rules this file follows
+   • Only compositor-friendly properties are animated: opacity, translate,
+     scale, rotate (the individual-transform properties). Because they are
+     separate from `transform`, they COMPOSE with your existing
+     `.card:hover { transform: translateY(-5px) }` and Tailwind's
+     `hover:-translate-y-0.5` instead of fighting them.
+   • `will-change` is applied only while something is animating / hovered,
+     never permanently (permanent will-change wastes GPU memory and creates
+     containing blocks that break position:fixed children such as modals).
+   • No HTML, text or layout is changed. Everything is additive.
+   • JS-dependent classes (.ux-reveal, .ux-card, .is-current …) are added by
+     ux-enhancements.js; without JS the page simply looks like it does today.
+   ========================================================================== */
+
+
+/* --------------------------------------------------------------------------
+   0. TOKENS + KEYFRAMES
+   -------------------------------------------------------------------------- */
+:root {
+  --ux-ease: cubic-bezier(0.22, 1, 0.36, 1);      /* smooth deceleration   */
+  --ux-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* slight overshoot      */
+  --ux-purple: 168 106 36;
+  --ux-terracotta: 168 106 36;
+  --ux-sand: 255 255 255;
+  --ux-olive: 21 28 13;
+  --ux-slate: 88 139 139;
+  --ux-indigo: 88 139 139;
+  --ux-surface: var(--color-surface);
+  --ux-bg: var(--color-page);
+  --ux-dim: var(--color-muted);
+}
+
+@keyframes ux-fade      { from { opacity: 0 } to { opacity: 1 } }
+@keyframes ux-fade-out  { to   { opacity: 0 } }
+@keyframes ux-rise      { from { opacity: 0; translate: 0 18px } to { opacity: 1; translate: 0 0 } }
+@keyframes ux-view-in   { from { opacity: 0; translate: 0 10px } to { opacity: 1; translate: 0 0 } }
+@keyframes ux-slide-r   { from { opacity: 0; translate: -16px 0 } to { opacity: 1; translate: 0 0 } }
+@keyframes ux-drop      { from { opacity: 0; translate: 0 -8px; scale: .98 } to { opacity: 1; translate: 0 0; scale: 1 } }
+@keyframes ux-pop       { from { opacity: 0; translate: 0 14px; scale: .96 } to { opacity: 1; translate: 0 0; scale: 1 } }
+@keyframes ux-spin      { to   { rotate: 360deg } }
+@keyframes ux-shimmer   { to   { translate: 100% 0 } }
+@keyframes ux-ripple    { to   { scale: 1; opacity: 0 } }
+@keyframes ux-confirm   { 0% { scale: .92 } 60% { scale: 1.06 } 100% { scale: 1 } }
+@keyframes ux-indeterminate { from { translate: -100% 0 } to { translate: 250% 0 } }
+@keyframes ux-progress  { from { scale: 0 1 } to { scale: .88 1 } }
+
+
+/* --------------------------------------------------------------------------
+   1. PAGE ENTRANCE / EXIT
+   Replaces the `body { animation: slideUp .8s }` found in every template.
+   That animation put a transform on <body>, which re-parents every
+   position:fixed element (modals, toasts, back button) for 0.8 s. Here the
+   body only fades; the content wrappers do the subtle slide-up.
+   `backwards` fill = no lingering transform once the animation finishes.
+   -------------------------------------------------------------------------- */
+html { scroll-behavior: smooth; }
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html body { animation: ux-fade 0.45s ease-out backwards; }
+
+body > .main,
+body > .main-content,
+body > .container { animation: ux-rise 0.6s var(--ux-ease) 0.04s backwards; }
+
+body > .sidebar { animation: ux-slide-r 0.55s var(--ux-ease) backwards; }
+
+/* Exit fade, triggered by ux-enhancements.js just before navigating */
+body.ux-leaving {
+  opacity: 0;
+  transition: opacity 0.18s ease-in;
+  pointer-events: none;
+}
+
+/* Thin top progress bar shown while navigating away */
+.ux-progress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 2px;
+  z-index: 10001;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgb(var(--ux-indigo)), var(--color-accent-hover), rgb(var(--ux-indigo)));
+  box-shadow: 0 0 12px rgb(var(--ux-purple) / 0.8);
+  transform-origin: left center;
+  scale: 0 1;
+  opacity: 0;
+}
+.ux-progress.is-active {
+  opacity: 1;
+  animation: ux-progress 1.6s var(--ux-ease) forwards;
+}
+
+
+/* --------------------------------------------------------------------------
+   2. SCROLL REVEAL  (classes added by the IntersectionObserver in the JS)
+   The JS removes both classes when the animation ends, so hover styles and
+   page CSS take over cleanly afterwards.
+   -------------------------------------------------------------------------- */
+.ux-reveal {
+  opacity: 0;
+  translate: 0 18px;
+  will-change: opacity, translate;
+}
+.ux-reveal.ux-in {
+  animation: ux-rise 0.65s var(--ux-ease) var(--ux-delay, 0ms) both;
+}
+
+
+/* --------------------------------------------------------------------------
+   3. CARDS — hover lift + soft blue halo
+   The glow lives on a ::after pseudo-element and only its OPACITY is
+   animated (compositor-only). Animating box-shadow directly would repaint
+   every frame and is the #1 cause of janky card grids.
+   Outer box-shadows are never drawn inside the element's own box, so the
+   glow doesn't tint your semi-transparent card backgrounds.
+   (.pipeline-stage is excluded: it already uses ::after for its arrow.)
+   -------------------------------------------------------------------------- */
+html body :is(.job-card, .stat-card, .recent-card, .time-card,
+              .applicant-card, .notification, .ux-card) {
+  position: relative;
+  transition:
+    scale 0.35s var(--ux-ease),
+    transform 0.35s var(--ux-ease),   /* keeps .card:hover translateY(-5px) smooth */
+    background-color 0.3s ease,
+    border-color 0.3s ease;
+}
+
+html body :is(.job-card, .stat-card, .recent-card, .time-card,
+              .applicant-card, .notification, .ux-card)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow:
+    0 0 0 1px rgb(var(--ux-purple) / 0.55),
+    0 22px 48px -12px rgb(var(--ux-purple) / 0.5),
+    0 0 42px rgb(var(--ux-purple) / 0.22);
+  transition: opacity 0.35s var(--ux-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html body :is(.job-card, .stat-card, .recent-card, .time-card,
+                .applicant-card, .notification, .ux-card):hover {
+    scale: 1.02;
+    will-change: scale;
+    background-color: rgb(var(--ux-sand) / 0.075);
+    border-color: rgb(var(--ux-purple) / 0.45);
+  }
+  html body :is(.job-card, .stat-card, .recent-card, .time-card,
+                .applicant-card, .notification, .ux-card):hover::after {
+    opacity: 1;
+  }
+  html body .pipeline-stage {
+    transition: scale 0.3s var(--ux-ease), border-color 0.3s ease, background-color 0.3s ease;
+  }
+  html body .pipeline-stage:hover {
+    scale: 1.04;
+    border-color: rgb(var(--ux-purple) / 0.5);
+    background-color: rgb(var(--ux-indigo) / 0.12);
+  }
+}
+html body :is(.job-card, .stat-card, .recent-card, .time-card,
+              .applicant-card, .notification, .ux-card):active { scale: 0.995; }
+
+
+/* --------------------------------------------------------------------------
+   4. BUTTONS — glow, lift, press, ripple, magnetic pull, busy spinner
+   `--ux-mx / --ux-my` are set by the magnetic-pull JS (default 0).
+   -------------------------------------------------------------------------- */
+html body :is(button, .btn, .primary-btn, .btn-primary, .apply-btn, a.ux-cta):not(:where(.tab, .modal-close, .toggle-password, .password-toggle, .app-toast-close, [data-ux-skip])) {
+  transition:
+    translate 0.28s var(--ux-ease),
+    scale 0.28s var(--ux-ease),
+    transform 0.28s var(--ux-ease),
+    box-shadow 0.3s ease,
+    filter 0.3s ease,
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease,
+    opacity 0.2s ease;
+  translate: var(--ux-mx, 0px) var(--ux-my, 0px);
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  /* glow + brighten (all buttons) */
+  html body :is(button, .btn, .primary-btn, .btn-primary, .apply-btn, a.ux-cta):not(:where(.tab, .modal-close, .toggle-password, .password-toggle, .app-toast-close, [data-ux-skip])):not(:disabled):hover {
+    filter: brightness(1.1) saturate(1.08);
+    box-shadow:
+      0 10px 28px -6px rgb(var(--ux-purple) / 0.6),
+      0 0 0 1px rgb(var(--ux-purple) / 0.35);
+    will-change: translate;
+  }
+  /* gentle lift (not for <a>: Tailwind landing CTAs already lift themselves) */
+  html body :is(button, .btn, .primary-btn, .btn-primary, .apply-btn):not(a):not(:where(.tab, .modal-close, .toggle-password, .password-toggle, .app-toast-close, [data-ux-skip])):not(:disabled):hover {
+    translate: var(--ux-mx, 0px) calc(var(--ux-my, 0px) - 2px);
+  }
+  /* semantic variants — must stay AFTER the generic rule above */
+  html body button.btn-close:not(:disabled):hover   { box-shadow: 0 10px 28px -6px rgb(var(--ux-terracotta) / 0.6); }
+  html body button.btn-applied:not(:disabled):hover { box-shadow: 0 10px 28px -6px rgb(var(--ux-olive) / 0.55); }
+  html body button.btn-view:not(:disabled):hover    { box-shadow: 0 0 0 1px rgb(var(--ux-indigo) / 0.6), 0 8px 22px -8px rgb(var(--ux-indigo) / 0.5); }
+}
+
+html body :is(button, .btn, .primary-btn, .btn-primary, .apply-btn, a.ux-cta):not(:where(.tab, .modal-close, .toggle-password, .password-toggle, .app-toast-close, [data-ux-skip])):not(:disabled):active {
+  scale: 0.97;
+  translate: var(--ux-mx, 0px) var(--ux-my, 0px);
+  transition-duration: 0.1s;
+}
+
+html body :is(button, .btn, .primary-btn, .btn-primary, .apply-btn):disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: saturate(0.7);
+}
+
+/* Visual confirmation when an Apply button flips to "Applied" */
+html body button.btn-applied { animation: ux-confirm 0.45s var(--ux-spring); }
+
+/* Ripple (spans created on pointerdown by the JS) */
+.ux-ripple-host { position: relative; overflow: hidden; isolation: isolate; }
+.ux-ripple {
+  position: absolute;
+  width: var(--d);
+  height: var(--d);
+  left: calc(var(--x) - var(--d) / 2);
+  top: calc(var(--y) - var(--d) / 2);
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgb(var(--ux-sand) / 0.45) 0%, rgb(var(--ux-sand) / 0.18) 45%, transparent 70%);
+  scale: 0;
+  opacity: 0.9;
+  animation: ux-ripple 0.65s var(--ux-ease) forwards;
+}
+
+/* Busy state — app.js already sets aria-busy="true" on submit buttons while
+   login / register / profile / post-job requests are in flight. */
+html body button[aria-busy="true"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  pointer-events: none;
+}
+html body button[aria-busy="true"]:disabled { opacity: 1; cursor: progress; filter: none; }
+html body button[aria-busy="true"]::before {
+  content: "";
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgb(var(--ux-sand) / 0.35);
+  border-top-color: var(--color-white);
+  animation: ux-spin 0.7s linear infinite;
+}
+
+
+/* --------------------------------------------------------------------------
+   5. FORM FIELDS — animated focus (ring expands + soft blue glow)
+   -------------------------------------------------------------------------- */
+html body :is(input, select, textarea):not([type="checkbox"], [type="radio"], [type="file"], [type="range"], [type="submit"], [type="button"]) {
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.3s var(--ux-ease),
+    background-color 0.25s ease;
+}
+
+html body :is(input, select, textarea):not([type="checkbox"], [type="radio"], [type="file"], [type="range"], [type="submit"], [type="button"]):hover:not(:focus) {
+  border-color: rgb(var(--ux-sand) / 0.28);
+}
+
+html body :is(input, select, textarea):not([type="checkbox"], [type="radio"], [type="file"], [type="range"], [type="submit"], [type="button"]):focus {
+  outline: none;
+  border-color: rgb(var(--ux-purple));
+  background-color: rgb(var(--ux-sand) / 0.08);
+  box-shadow:
+    0 0 0 3px rgb(var(--ux-purple) / 0.22),
+    0 0 28px -2px rgb(var(--ux-purple) / 0.35);
+}
+
+/* Only after the user has interacted (never on a fresh, untouched form) */
+html body :is(input, textarea, select):user-invalid {
+  border-color: rgb(var(--ux-terracotta) / 0.85);
+  box-shadow: 0 0 0 3px rgb(var(--ux-terracotta) / 0.16);
+}
+
+::placeholder { transition: opacity 0.25s ease; }
+:focus::placeholder { opacity: 0.4; }
+
+/* Chrome/Safari autofill paints a white/yellow box on dark themes */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: var(--color-text);
+  caret-color: var(--color-text);
+  box-shadow: 0 0 0 1000px var(--color-surface) inset;
+  transition: background-color 9999s ease-out 0s;
+}
+input:-webkit-autofill:focus {
+  box-shadow: 0 0 0 1000px var(--color-surface) inset, 0 0 0 3px rgb(var(--ux-purple) / 0.3);
+}
+
+/* Resume picker wrapper + dashed upload zone get the same treatment */
+#resumeWrap { transition: border-color 0.25s ease, box-shadow 0.3s var(--ux-ease); }
+#resumeWrap:hover { border-color: rgb(var(--ux-sand) / 0.28) !important; }
+#resumeWrap:focus-within {
+  border-color: rgb(var(--ux-purple)) !important;
+  box-shadow: 0 0 0 3px rgb(var(--ux-purple) / 0.22), 0 0 28px -2px rgb(var(--ux-purple) / 0.35);
+}
+.upload { transition: border-color 0.25s ease, background-color 0.25s ease; }
+.upload:hover { border-color: rgb(var(--ux-purple) / 0.8); background-color: rgb(var(--ux-purple) / 0.08); }
+
+/* Inline validation messages slide in when validation.js fills them */
+html body :is(.error:not(:empty), .error-msg, .message, .flash) {
+  animation: ux-view-in 0.35s var(--ux-ease) backwards;
+}
+
+/* Visible keyboard focus for everything that isn't a text field */
+:is(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent-hover);
+  outline-offset: 2px;
+}
+
+
+/* --------------------------------------------------------------------------
+   6. CUSTOM SCROLLBAR (slate and blue)
+   Chrome 121+ ignores ::-webkit-scrollbar once `scrollbar-color` is set, so
+   the standards properties are scoped to browsers WITHOUT the webkit
+   pseudo-elements (Firefox). Chrome/Edge/Safari get the gradient thumb.
+   -------------------------------------------------------------------------- */
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: rgb(var(--ux-sand) / 0.03); }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgb(var(--ux-indigo)), rgb(var(--ux-purple)));
+  background-clip: padding-box;
+  border: 3px solid transparent;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--color-accent), var(--color-accent-hover));
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-corner { background: transparent; }
+
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-width: thin; scrollbar-color: var(--color-accent) var(--color-subtle); }
+}
+
+
+/* --------------------------------------------------------------------------
+   7. ACTIVE NAVIGATION FEEDBACK
+   .is-current + aria-current are added by the JS from location.pathname.
+   Admin sidebar tabs already toggle .active — styled identically here.
+   -------------------------------------------------------------------------- */
+/* 7a. Sidebar: glowing left indicator bar that grows in */
+html body .sidebar a:not([href^="javascript"]) {
+  position: relative;
+  transition: background-color 0.25s ease, color 0.25s ease, translate 0.3s var(--ux-ease);
+}
+html body .sidebar a:not([href^="javascript"])::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 22%;
+  bottom: 22%;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(180deg, var(--color-accent-hover), rgb(var(--ux-indigo)));
+  box-shadow: 0 0 12px rgb(var(--ux-purple) / 0.9);
+  scale: 1 0;
+  transform-origin: center;
+  transition: scale 0.35s var(--ux-ease);
+}
+html body .sidebar a:not([href^="javascript"]):hover { translate: 3px 0; color: var(--color-muted); }
+html body .sidebar a:not([href^="javascript"]):hover::before { scale: 1 0.5; }
+html body .sidebar a.active,
+html body .sidebar a.is-current,
+html body .sidebar a[aria-current="page"] {
+  color: var(--color-text);
+  background: linear-gradient(90deg, rgb(var(--ux-indigo) / 0.3), rgb(var(--ux-indigo) / 0.06));
+}
+html body .sidebar a.active::before,
+html body .sidebar a.is-current::before,
+html body .sidebar a[aria-current="page"]::before { scale: 1 1; }
+
+/* 7b. Top navbar: underline that slides in from the left */
+html body :is(.navbar > a, .navbar nav a, .nav-right > a):not(.logo):not([href^="javascript"]) {
+  position: relative;
+}
+html body :is(.navbar > a, .navbar nav a, .nav-right > a):not(.logo):not([href^="javascript"])::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--color-muted), var(--color-white));
+  box-shadow: 0 0 10px rgb(var(--ux-purple) / 0.8);
+  scale: 0 1;
+  transform-origin: left center;
+  transition: scale 0.35s var(--ux-ease);
+}
+html body :is(.navbar > a, .navbar nav a, .nav-right > a):not(.logo):hover::after,
+html body :is(.navbar > a, .navbar nav a, .nav-right > a).is-current::after,
+html body :is(.navbar > a, .navbar nav a, .nav-right > a)[aria-current="page"]::after { scale: 1 1; }
+
+/* 7c. Login role tabs: a single thumb that SLIDES between tabs.
+   Enabled only once the JS adds .ux-slider (so no-JS keeps the original look). */
+.toggle.ux-slider { position: relative; }
+.toggle.ux-slider::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / var(--ux-tab-n, 3));
+  border-radius: 10px;
+  background: linear-gradient(90deg, rgb(var(--ux-indigo)), rgb(var(--ux-purple)));
+  box-shadow: 0 6px 18px -6px rgb(var(--ux-purple) / 0.7);
+  translate: calc(var(--ux-tab-i, 0) * 100%) 0;
+}
+.toggle.ux-slider.ux-ready::before { transition: translate 0.45s var(--ux-spring); }
+.toggle.ux-slider .tab { position: relative; z-index: 1; transition: color 0.3s ease; }
+.toggle.ux-slider .tab.active { background: transparent; color: var(--color-text); }
+
+
+/* --------------------------------------------------------------------------
+   8. VIEW / STATE CHANGES — no more instant display:none → block flips
+   Animations start whenever an element goes from display:none to displayed,
+   so these work with your existing classList / style.display toggles and
+   need zero JS.
+   -------------------------------------------------------------------------- */
+.section.active       { animation: ux-view-in 0.45s var(--ux-ease) backwards; } /* admin tabs      */
+.form.active          { animation: ux-view-in 0.4s var(--ux-ease) backwards; }  /* login role forms */
+.dropdown             { transform-origin: top right; animation: ux-drop 0.24s var(--ux-ease) backwards; }
+
+.modal-overlay.active {
+  animation: ux-fade 0.25s ease backwards;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.modal-overlay.active .modal-content { animation: ux-pop 0.4s var(--ux-spring) backwards; }
+
+
+/* --------------------------------------------------------------------------
+   9. RECONCILE WITH app.js's INJECTED STYLES
+   Shared motion and injected components follow the centralized light theme.
+   Selector hooks and animation timing remain intact.
+   -------------------------------------------------------------------------- */
+/* Skeleton: white card + moving blue sheen (translate only = compositor) */
+html body .app-skeleton-card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  animation: ux-fade 0.3s ease both;
+}
+html body .app-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-subtle);
+  animation: none;
+}
+html body .app-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(var(--ux-indigo) / 0.14), transparent);
+  translate: -100% 0;
+  animation: ux-shimmer 1.4s var(--ux-ease) infinite;
+  will-change: translate;
+}
+
+/* Match gauges (both the legacy .mini-circle and app.js's .app-match-gauge) */
+html body .app-match-gauge-svg circle:first-of-type { stroke: var(--color-border); }
+html body .app-match-gauge-svg { filter: drop-shadow(0 0 6px var(--match-color, rgb(var(--ux-indigo)))); }
+html body .app-match-gauge-value {
+  color: var(--color-text) !important;
+  text-shadow: none;
+  font-variant-numeric: tabular-nums;
+}
+html body .mini-circle svg { filter: drop-shadow(0 0 5px rgb(var(--ux-indigo) / 0.55)); }
+html body .mini-text { font-variant-numeric: tabular-nums; }
+
+/* Skill badges */
+html body .app-skill-label { color: var(--ux-dim); }
+html body .app-skill-empty { color: var(--color-muted); }
+html body .app-skill-matched {
+  color: var(--color-success);
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
+}
+html body .app-skill-missing {
+  color: var(--ux-dim);
+  background: var(--color-subtle);
+  border: 1px dashed var(--color-border);
+}
+
+/* Toasts: elevated white surface with a springy entrance */
+html body .app-toast {
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid rgb(var(--ux-purple) / 0.35);
+  box-shadow: var(--shadow-elevated);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  animation: ux-pop 0.45s var(--ux-spring) backwards;
+}
+html body .app-toast[data-kind="error"]   { border-color: rgb(var(--ux-terracotta) / 0.55); }
+html body .app-toast[data-kind="success"] { border-color: rgb(var(--ux-olive) / 0.5); }
+html body .app-toast-close { color: var(--color-muted); }
+html body .app-toast-close:hover { color: var(--color-accent); }
+
+
+/* --------------------------------------------------------------------------
+   10. RESUME UPLOAD / OCR LOADING OVERLAY
+   Injected by the JS inside the form while app.js reports aria-busy="true".
+   Built so the page never looks stuck during OCR + skill extraction.
+   -------------------------------------------------------------------------- */
+.ux-busy-host { position: relative; }
+
+.ux-ocr {
+  position: absolute;
+  inset: -12px;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  border-radius: 20px;
+  background: rgb(var(--ux-sand) / 0.94);
+  border: 1px solid rgb(var(--ux-purple) / 0.3);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: ux-fade 0.3s ease both;
+}
+.ux-ocr.is-leaving { animation: ux-fade-out 0.25s ease forwards; }
+
+.ux-ocr__panel { width: min(360px, 100%); display: grid; gap: 16px; text-align: center; }
+
+.ux-ocr__ring {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 20%, rgb(var(--ux-purple)) 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), var(--color-slate) calc(100% - 5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 6px), var(--color-slate) calc(100% - 5px));
+  filter: drop-shadow(0 0 10px rgb(var(--ux-purple) / 0.6));
+  animation: ux-spin 1s linear infinite;
+}
+
+.ux-ocr__title { font-size: 16px; font-weight: 700; color: var(--color-text); margin: 0; }
+.ux-ocr__step  { font-size: 13px; color: var(--ux-dim); min-height: 20px; margin: 0; transition: opacity 0.2s ease; }
+.ux-ocr__step.is-swapping { opacity: 0; }
+
+.ux-ocr__bar {
+  position: relative;
+  height: 4px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: var(--color-subtle);
+}
+.ux-ocr__bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, rgb(var(--ux-purple)), var(--color-accent-hover), transparent);
+  animation: ux-indeterminate 1.3s var(--ux-ease) infinite;
+}
+
+.ux-ocr__skeleton { display: grid; gap: 8px; margin-top: 4px; }
+.ux-ocr__skeleton span {
+  position: relative;
+  display: block;
+  height: 10px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: var(--color-subtle);
+}
+.ux-ocr__skeleton span:nth-child(2) { width: 82%; }
+.ux-ocr__skeleton span:nth-child(3) { width: 60%; }
+.ux-ocr__skeleton span::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(var(--ux-terracotta) / 0.3), transparent);
+  translate: -100% 0;
+  animation: ux-shimmer 1.4s var(--ux-ease) infinite;
+}
+
+
+/* --------------------------------------------------------------------------
+   11. REDUCED MOTION — respect the OS setting
+   Entrances/hover motion are removed; spinners are kept (slower) because
+   they communicate "working", which is information rather than decoration.
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .ux-reveal { opacity: 1; translate: none; }
+
+  html body button[aria-busy="true"]::before,
+  .ux-ocr__ring {
+    animation-duration: 1.6s !important;
+    animation-iteration-count: infinite !important;
+  }
+}

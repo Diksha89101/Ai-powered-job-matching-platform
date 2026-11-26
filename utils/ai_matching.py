@@ -1,11 +1,14 @@
+# pyright: reportMissingImports=false
+
 import os
 import re
+import math
 import zipfile
-from typing import Dict, Iterable, List
+from typing import Any, Dict, Iterable, List
 from xml.etree import ElementTree
 
 try:
-    from PyPDF2 import PdfReader
+    from pypdf import PdfReader
 except Exception:  # pragma: no cover - fallback when dependency is unavailable
     PdfReader = None
 
@@ -23,6 +26,11 @@ try:
     from rapidocr_onnxruntime import RapidOCR
 except Exception:  # pragma: no cover - OCR is optional at runtime
     RapidOCR = None
+
+try:
+    from sentence_transformers import SentenceTransformer
+except Exception:  # pragma: no cover - semantic matching is optional until dependencies are installed
+    SentenceTransformer = None
 
 
 SKILL_ALIASES: Dict[str, List[str]] = {
@@ -158,6 +166,9 @@ def _pattern_for_phrase(phrase: str) -> re.Pattern:
 ALIAS_PATTERNS = [(_pattern_for_phrase(alias), canonical) for alias, canonical in ALIAS_TO_CANONICAL.items()]
 _NLP = None
 _OCR_ENGINE = None
+_EMBEDDING_MODEL = None
+_EMBEDDING_LOAD_ATTEMPTED = False
+_EMBEDDING_MODEL_NAME = os.getenv("SEMANTIC_MODEL_NAME", "all-MiniLM-L6-v2")
 
 
 def get_nlp():
@@ -176,6 +187,55 @@ def get_nlp():
         except Exception:
             _NLP = None
     return _NLP
+
+
+def get_embedding_model():
+    """Load the sentence-transformer model once and reuse it for matching."""
+    global _EMBEDDING_MODEL, _EMBEDDING_LOAD_ATTEMPTED
+    if _EMBEDDING_MODEL is not None:
+        return _EMBEDDING_MODEL
+    if _EMBEDDING_LOAD_ATTEMPTED or SentenceTransformer is None:
+        return None
+    _EMBEDDING_LOAD_ATTEMPTED = True
+    try:
+        _EMBEDDING_MODEL = SentenceTransformer(_EMBEDDING_MODEL_NAME)
+    except Exception:
+        _EMBEDDING_MODEL = None
+    return _EMBEDDING_MODEL
+
+
+def semantic_similarity(candidate_text: str, job_text: str) -> float:
+    """Return cosine similarity between candidate and job embeddings as 0..1."""
+    if not candidate_text or not job_text:
+        return 0.0
+    model = get_embedding_model()
+    if model is None:
+        return 0.0
+    try:
+        embeddings = model.encode([candidate_text[:12000], job_text[:12000]], normalize_embeddings=True)
+        similarity = float(sum(a * b for a, b in zip(embeddings[0], embeddings[1])))
+        return max(0.0, min(1.0, similarity))
+    except Exception:
+        return 0.0
+
+
+def _weight_config() -> tuple[float, float]:
+    """Return normalized hybrid weights, falling back safely for bad config."""
+    try:
+        semantic = float(os.getenv("SEMANTIC_WEIGHT", "0.60"))
+        keyword = float(os.getenv("KEYWORD_WEIGHT", "0.40"))
+        if (
+            not math.isfinite(semantic)
+            or not math.isfinite(keyword)
+            or semantic < 0
+            or keyword < 0
+            or semantic + keyword <= 0
+        ):
+            raise ValueError
+    except (TypeError, ValueError):
+        return 0.6, 0.4
+    total = semantic + keyword
+    return semantic / total, keyword / total
 
 
 def get_ocr_engine():
@@ -251,51 +311,95 @@ def extract_keywords_from_text(text: str) -> List[str]:
     return extract_resume_skills_nlp(text)
 
 
-def build_candidate_profile(skills_text: str = "", resume_text: str = "") -> Dict[str, List[str]]:
+def build_candidate_profile(skills_text: str = "", resume_text: str = "") -> Dict[str, Any]:
     manual_skills = normalize_skill_list(skills_text)
     resume_skills = extract_resume_skills_nlp(resume_text)
+    candidate_text = "\n".join(part for part in [skills_text, resume_text] if part).strip()
     return {
         "manual_skills": manual_skills,
         "resume_skills": resume_skills,
         "profile_keywords": resume_skills,
+        "semantic_text": candidate_text,
     }
 
 
-def build_job_profile(skills_text: str = "", title: str = "", description: str = "") -> Dict[str, List[str]]:
+def build_job_profile(skills_text: str = "", title: str = "", description: str = "") -> Dict[str, Any]:
     manual_skills = normalize_skill_list(skills_text)
     inferred_keywords = extract_keywords_from_text(" ".join([title or "", description or ""]))
     match_keywords = manual_skills or inferred_keywords
     searchable_keywords = dedupe_preserve_order(manual_skills + inferred_keywords)
+    job_text = "\n".join(part for part in [title, description, skills_text] if part).strip()
     return {
         "normalized_skills": manual_skills,
         "inferred_keywords": inferred_keywords,
         "match_keywords": match_keywords,
         "searchable_keywords": searchable_keywords,
+        "semantic_text": job_text,
     }
 
 
-def calculate_keyword_match(candidate_keywords: Iterable[str], match_keywords: Iterable[str], inferred_keywords: Iterable[str] = ()) -> Dict[str, object]:
-    candidate_list = dedupe_preserve_order(candidate_keywords)
-    scoring_keywords = dedupe_preserve_order(match_keywords)
-    context_keywords = dedupe_preserve_order(inferred_keywords)
-    candidate_set = set(candidate_list)
+def calculate_keyword_match(
+    candidate_keywords: Iterable[str],
+    match_keywords: Iterable[str],
+    inferred_keywords: Iterable[str] = (),
+    candidate_text: str = "",
+    job_text: str = "",
+) -> Dict[str, Any]:
+    candidate_display = dedupe_preserve_order(
+        value.strip() for value in candidate_keywords
+        if isinstance(value, str) and value.strip()
+    )
+    scoring_display = dedupe_preserve_order(
+        value.strip() for value in match_keywords
+        if isinstance(value, str) and value.strip()
+    )
+    context_display = dedupe_preserve_order(
+        value.strip() for value in inferred_keywords
+        if isinstance(value, str) and value.strip()
+    )
+    candidate_set = {_normalize_keyword(value) for value in candidate_display}
+    scoring_keys = [_normalize_keyword(value) for value in scoring_display]
+    context_keys = [_normalize_keyword(value) for value in context_display]
 
-    matched_skills = [keyword for keyword in scoring_keywords if keyword in candidate_set]
-    missing_skills = [keyword for keyword in scoring_keywords if keyword not in candidate_set]
+    matched_skills = [
+        display for display, key in zip(scoring_display, scoring_keys)
+        if key in candidate_set
+    ]
+    missing_skills = [
+        display for display, key in zip(scoring_display, scoring_keys)
+        if key not in candidate_set
+    ]
     bonus_keywords = [
-        keyword for keyword in context_keywords
-        if keyword in candidate_set and keyword not in matched_skills
+        display for display, key in zip(context_display, context_keys)
+        if key in candidate_set and key not in set(scoring_keys)
     ]
 
-    total = len(scoring_keywords)
+    total = len(scoring_keys)
     match_percentage = int(round((len(matched_skills) / total) * 100)) if total else 0
+
+    semantic_similarity_score = semantic_similarity(candidate_text, job_text)
+    semantic_percentage = int(round(semantic_similarity_score * 100))
+
+    # Hybrid scoring keeps explicit skill overlap while adding semantic understanding.
+    # If embeddings are unavailable, the existing keyword score remains the fallback.
+    embedding_model = get_embedding_model() if candidate_text and job_text else None
+    if embedding_model is not None:
+        semantic_weight, keyword_weight = _weight_config()
+        match_percentage = int(round(
+            (semantic_percentage * semantic_weight) +
+            (match_percentage * keyword_weight)
+        ))
+        match_percentage = max(0, min(100, match_percentage))
 
     return {
         "matchPercentage": match_percentage,
+        "keywordMatchPercentage": int(round((len(matched_skills) / total) * 100)) if total else 0,
+        "semanticSimilarity": round(semantic_similarity_score, 4),
+        "semanticMatchPercentage": semantic_percentage,
         "matchedSkills": matched_skills,
         "missingSkills": missing_skills,
         "bonusKeywords": bonus_keywords,
-        "candidateKeywords": candidate_list,
+        "candidateKeywords": candidate_display,
         "totalKeywords": total,
     }
 
@@ -319,6 +423,8 @@ def _extract_pdf_text(file_path: str) -> str:
 
     try:
         reader = PdfReader(file_path)
+        if not reader.pages:
+            return ""
         text_parts = []
         for page in reader.pages:
             text_parts.append(page.extract_text() or "")
@@ -377,6 +483,17 @@ def _extract_docx_text(file_path: str) -> str:
         with zipfile.ZipFile(file_path) as docx_file:
             xml_bytes = docx_file.read("word/document.xml")
         root = ElementTree.fromstring(xml_bytes)
+        paragraphs = []
+        for paragraph in (node for node in root.iter() if node.tag.endswith("}p")):
+            paragraph_text = "".join(
+                node.text or ""
+                for node in paragraph.iter()
+                if node.tag.endswith("}t")
+            )
+            if paragraph_text.strip():
+                paragraphs.append(paragraph_text)
+        if paragraphs:
+            return _clean_extracted_text("\n".join(paragraphs))
         text_nodes = [node.text for node in root.iter() if node.text]
         return _clean_extracted_text(" ".join(text_nodes))
     except Exception:
@@ -394,7 +511,10 @@ def _extract_plain_text(file_path: str) -> str:
 def _extract_legacy_doc_text(file_path: str) -> str:
     try:
         with open(file_path, "rb") as file_obj:
-            raw_text = file_obj.read().decode("latin-1", errors="ignore")
+            raw_bytes = file_obj.read()
+        if not raw_bytes.startswith(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"):
+            return ""
+        raw_text = raw_bytes.decode("latin-1", errors="ignore")
         return _clean_extracted_text(raw_text)
     except Exception:
         return ""

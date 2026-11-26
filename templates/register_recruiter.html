@@ -17,11 +17,27 @@
         .primary-btn { width: 100%; height: 46px; border: none; border-radius: 12px; background: linear-gradient(90deg, #6366f1, #8b5cf6); color: white; cursor: pointer; }
         .error { color: #ef4444; font-size: 12px; margin-bottom: 12px; display: none; }
     </style>
+    <style>
+        body {
+            animation: slideUp 0.8s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(60px);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 <body>
 <header class="navbar">
-        <div class="logo">AI JOB</div>
-        <nav><a href="login.html">Login</a></nav>
+        <div class="logo">AI Jobs</div>
+        <nav><a href="/login">Login</a></nav>
     </header>
     <br>
     <center><h2>Recruiter Registration</h2></center>
@@ -39,11 +55,13 @@
                 <div id="error" class="error"></div>
                 <button type="submit" class="primary-btn">Register</button>
                 <div style="text-align: center; margin-top: 16px;">
-                    <p style="margin-bottom: 12px; color: #94a3b8;">Already have an account? <a href="login.html" style="color: #6366f1; text-decoration: none; font-weight: bold;">Login</a></p>
+                    <p style="margin-bottom: 12px; color: #94a3b8;">Already have an account? <a href="/login" style="color: #6366f1; text-decoration: none; font-weight: bold;">Login</a></p>
                 </div>
             </form>
         </div>
     </div>
+    <script src="/static/js/main.js"></script>
+    <script src="/static/js/app.js"></script>
     <script>
         const API_URL = '/api';
         
@@ -82,12 +100,13 @@
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
                 alert('Registration successful!');
-                window.location.href = "recruiter_profile.html";
+                window.location.href = "/recruiter/profile";
             } catch (err) {
                 errorDiv.textContent = err.message;
                 errorDiv.style.display = 'block';
             }
         }
     </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </body>
 </html>

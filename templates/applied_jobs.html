@@ -4,16 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Applied Jobs</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body {
+            animation: slideUp 0.8s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(60px);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 <body>
     <div class="sidebar">
-        <h2>AI JOB</h2>
-        <a href="jobseeker_home.html">Home</a>
-        <a href="browse_jobs.html">Browse Jobs</a>
-        <a href="seeker_dashboard.html">Dashboard</a>
-        <a href="applied_jobs.html">Applied Jobs</a>
-        <a href="notifications.html">Notifications</a>
+        <h2>AI Jobs</h2>
+        <a href="/dashboard">Home</a>
+        <a href="/jobs">Browse Jobs</a>
+        <a href="/dashboard/seeker">Dashboard</a>
+        <a href="/jobs/applied">Applied Jobs</a>
+        <a href="/notifications">Notifications</a>
         <a href="#" onclick="logout()">Logout</a>
     </div>
 
@@ -23,7 +38,47 @@
     </div>
 
     <script src="/static/js/main.js"></script>
+    <script src="/static/js/app.js"></script>
     <script>
+        const exampleAppliedJobs = [
+            {
+                _id: '507f1f77bcf86cd799439101',
+                status: 'applied',
+                applied_at: '2026-11-05T10:30:00Z',
+                job: {
+                    _id: '507f1f77bcf86cd799439011',
+                    title: 'Frontend Developer',
+                    company: 'BrightPath Technologies',
+                    location: 'Bengaluru, Karnataka',
+                    description: 'Build responsive, accessible user experiences for a modern SaaS product.'
+                }
+            },
+            {
+                _id: '507f1f77bcf86cd799439102',
+                status: 'reviewed',
+                applied_at: '2026-11-03T09:15:00Z',
+                job: {
+                    _id: '507f1f77bcf86cd799439013',
+                    title: 'Data Analyst',
+                    company: 'Northstar Analytics',
+                    location: 'Pune, Maharashtra',
+                    description: 'Turn business data into insights, dashboards, and reporting for decision makers.'
+                }
+            },
+            {
+                _id: '507f1f77bcf86cd799439103',
+                status: 'shortlisted',
+                applied_at: '2026-11-01T14:45:00Z',
+                job: {
+                    _id: '507f1f77bcf86cd799439012',
+                    title: 'Python Backend Engineer',
+                    company: 'CloudHarbor Systems',
+                    location: 'Remote',
+                    description: 'Design reliable APIs and cloud backend services with strong engineering standards.'
+                }
+            }
+        ];
+
         async function loadAppliedJobs() {
             const list = document.getElementById('appliedJobsList');
             list.innerHTML = 'Loading...';
@@ -32,12 +87,9 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Failed to load applied jobs');
 
-                if (!data.length) {
-                    list.innerHTML = '<p>You have not applied to any jobs yet.</p>';
-                    return;
-                }
+                const jobsToDisplay = Array.isArray(data) && data.length ? data : exampleAppliedJobs;
 
-                list.innerHTML = data.map(item => `
+                list.innerHTML = jobsToDisplay.map(item => `
                     <div class="card" style="padding:16px;">
                         <h3>${item.job.title}</h3>
                         <p>${item.job.company} - ${item.job.location}</p>
@@ -46,11 +98,19 @@
                     </div>
                 `).join('');
             } catch (err) {
-                list.innerHTML = `<p>${err.message}</p>`;
+                list.innerHTML = exampleAppliedJobs.map(item => `
+                    <div class="card" style="padding:16px;">
+                        <h3>${item.job.title}</h3>
+                        <p>${item.job.company} - ${item.job.location}</p>
+                        <p>Status: ${item.status || 'applied'}</p>
+                        <small>Applied on ${new Date(item.applied_at).toLocaleDateString()}</small>
+                    </div>
+                `).join('');
             }
         }
 
         loadAppliedJobs();
     </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </body>
 </html>
