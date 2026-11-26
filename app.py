@@ -40,10 +40,10 @@ from app.services.storage import InvalidUploadError, save_private_upload
 from app.services.matching import (
     build_candidate_profile,
     build_job_profile,
-    calculate_keyword_match,
     normalize_skill_list,
 )
-from app.services.resume_parser import extract_resume_text
+from app.services.resume_parser import extract_resume_text, parse_resume_text
+from app.services.intelligence import analyze_skill_gaps, career_insights, hybrid_match
 
 
 PROFILE_FIELD_LIMITS = {
@@ -1284,6 +1284,78 @@ def update_profile():
     })
 
 
+@app.route('/api/users/account', methods=['DELETE'])
+@token_required
+def delete_account():
+    """Delete the caller's account, uploaded files, and directly owned records."""
+    user = g.current_user
+    if user.get('role') == 'admin':
+        return jsonify({'error': 'Administrator accounts cannot be deleted through this endpoint'}), 403
+    user_id = user['_id']
+    mongo.db.refresh_sessions.delete_many({'user_id': str(user_id)})
+    notifications = getattr(mongo.db, 'notifications', None)
+    if notifications is not None:
+        notifications.delete_many({'user_id': user_id})
+    if user.get('role') == 'jobseeker':
+        mongo.db.applications.delete_many({'seeker_id': user_id})
+        resume = os.path.basename(str(user.get('resume', '')).rstrip('/'))
+        if resume and resume == secure_filename(resume):
+            try:
+                os.remove(os.path.join(app.config['UPLOAD_FOLDER'], resume))
+            except FileNotFoundError:
+                pass
+        account_collection('jobseeker').delete_one({'_id': user_id})
+        mongo.db.users.delete_one({'_id': user_id})
+    elif user.get('role') == 'recruiter':
+        jobs = list(mongo.db.jobs.find({'recruiter_id': user_id}, {'_id': 1}))
+        job_ids = [job['_id'] for job in jobs]
+        if job_ids:
+            mongo.db.applications.delete_many({'job_id': {'$in': job_ids}})
+            mongo.db.jobs.delete_many({'_id': {'$in': job_ids}})
+        account_collection('recruiter').delete_one({'_id': user_id})
+        mongo.db.users.delete_one({'_id': user_id})
+    else:
+        return jsonify({'error': 'Unsupported account role'}), 403
+    log_activity('account_deleted', 'user', user_id, {'role': user.get('role')})
+    return jsonify({'message': 'Account and related records deleted'})
+
+
+@app.route('/api/users/resume/analysis', methods=['GET'])
+@token_required
+def resume_analysis():
+    if g.current_user.get('role') != 'jobseeker':
+        return jsonify({'error': 'Job seeker access required'}), 403
+    text = g.current_user.get('resume_text') or get_saved_resume_text(g.current_user)
+    return jsonify(parse_resume_text(text))
+
+
+@app.route('/api/jobs/<job_id>/skill-gaps', methods=['GET'])
+@token_required
+def job_skill_gaps(job_id):
+    if g.current_user.get('role') != 'jobseeker':
+        return jsonify({'error': 'Job seeker access required'}), 403
+    target_id = parse_object_id(job_id)
+    if not target_id:
+        return jsonify({'error': 'Invalid job id'}), 400
+    job = mongo.db.jobs.find_one({'_id': target_id})
+    if not job:
+        return jsonify({'error': 'Job not found'}), 404
+    profile = build_live_candidate_profile(g.current_user)
+    required = build_job_profile(job.get('skills', ''), job.get('title', ''), job.get('description', ''))
+    return jsonify(analyze_skill_gaps(profile.get('matching_keywords', []), required.get('match_keywords', [])))
+
+
+@app.route('/api/career/insights', methods=['GET'])
+@token_required
+def career_insights_route():
+    if g.current_user.get('role') != 'jobseeker':
+        return jsonify({'error': 'Job seeker access required'}), 403
+    profile = build_live_candidate_profile(g.current_user)
+    candidate = {**g.current_user, 'resume_text': profile.get('semantic_text', ''), 'skills': ', '.join(profile.get('matching_keywords', []))}
+    jobs = list(mongo.db.jobs.find({}, {'title': 1, 'skills': 1, 'description': 1, 'location': 1}).limit(100))
+    return jsonify(career_insights(candidate, jobs))
+
+
 
 @app.route('/api/users/<user_id>/resume/<path:filename>', methods=['GET'])
 @token_required
@@ -1506,23 +1578,9 @@ def apply_job(job_id):
         return jsonify({'error': 'Already applied'}), 400
 
     candidate_profile = build_live_candidate_profile(g.current_user)
-    job_profile = build_job_profile(
-        skills_text=job.get('skills', ''),
-        title=job.get('title', ''),
-        description=job.get('description', ''),
-    )
-    candidate_keywords = coerce_string_list(candidate_profile.get('matching_keywords'))
-    match_keywords = coerce_string_list(job_profile.get('match_keywords'))
-    inferred_keywords = coerce_string_list(job_profile.get('inferred_keywords'))
-    candidate_text = str(candidate_profile.get('semantic_text') or '')
-    job_text = str(job_profile.get('semantic_text') or '')
-    match = calculate_keyword_match(
-        candidate_keywords,
-        match_keywords,
-        inferred_keywords,
-        candidate_text,
-        job_text,
-    )
+    match = hybrid_match(g.current_user | {
+        'resume_text': candidate_profile.get('semantic_text', ''),
+    }, job)
     if match.get('matchPercentage', 0) < MIN_MATCH_PERCENTAGE_TO_APPLY:
         return jsonify({'error': f'Cannot apply: job match must be at least {MIN_MATCH_PERCENTAGE_TO_APPLY}%.'}), 400
     
@@ -1599,29 +1657,29 @@ def recommended_jobs():
     }
     jobs = list(mongo.db.jobs.find())
     for job in jobs:
-        job_profile = build_job_profile(
-            skills_text=job.get('skills', ''),
-            title=job.get('title', ''),
-            description=job.get('description', ''),
-        )
-        candidate_keywords = coerce_string_list(candidate_profile.get('matching_keywords'))
-        match_keywords = coerce_string_list(job_profile.get('match_keywords'))
-        inferred_keywords = coerce_string_list(job_profile.get('inferred_keywords'))
-        candidate_text = str(candidate_profile.get('semantic_text') or '')
-        job_text = str(job_profile.get('semantic_text') or '')
-        match = calculate_keyword_match(
-            candidate_keywords,
-            match_keywords,
-            inferred_keywords,
-            candidate_text,
-            job_text,
-        )
+        match = hybrid_match(g.current_user | {
+            'resume_text': candidate_profile.get('semantic_text', ''),
+        }, job)
         job['_id'] = str(job['_id'])
         job.update(match)
         job['alreadyApplied'] = job['_id'] in applied_job_ids
         if isinstance(job.get('recruiter_id'), ObjectId):
             job['recruiter_id'] = str(job['recruiter_id'])
     jobs.sort(key=lambda x: x.get('matchPercentage', 0), reverse=True)
+    location_filter = request.args.get('location', '').strip().casefold()
+    type_filter = request.args.get('job_type', '').strip().casefold()
+    experience_filter = request.args.get('experience_level', '').strip().casefold()
+    skill_filter = request.args.get('skill', '').strip().casefold()
+    if any(len(value) > 100 for value in (location_filter, type_filter, experience_filter, skill_filter)):
+        return jsonify({'error': 'Recommendation filters are too long'}), 400
+    if location_filter:
+        jobs = [job for job in jobs if location_filter in str(job.get('location', '')).casefold()]
+    if type_filter:
+        jobs = [job for job in jobs if type_filter == str(job.get('job_type', '')).casefold()]
+    if experience_filter:
+        jobs = [job for job in jobs if experience_filter == str(job.get('experience_level', '')).casefold()]
+    if skill_filter:
+        jobs = [job for job in jobs if skill_filter in ' '.join(job.get('matchedSkills', [])).casefold()]
     return jsonify(jobs)
 
 @app.route('/api/recruiter/jobs/<job_id>/applicants', methods=['GET'])
@@ -1638,11 +1696,6 @@ def get_applicants(job_id):
     if not job:
         return jsonify({'error': 'Job not found'}), 404
     
-    job_profile = build_job_profile(
-        skills_text=job.get('skills', ''),
-        title=job.get('title', ''),
-        description=job.get('description', ''),
-    )
     applicants = []
     for application in mongo.db.applications.find({'job_id': target_id}).sort('applied_at', -1):
         seeker = find_user_by_id(application.get('seeker_id'))
@@ -1655,20 +1708,9 @@ def get_applicants(job_id):
         app['seeker_id'] = str(app['seeker_id'])
         app['seeker']['_id'] = str(app['seeker']['_id'])
         candidate_profile = build_live_candidate_profile(app['seeker'])
-        candidate_keywords = coerce_string_list(candidate_profile.get('matching_keywords'))
-        match_keywords = coerce_string_list(job_profile.get('match_keywords'))
-        inferred_keywords = coerce_string_list(job_profile.get('inferred_keywords'))
-        candidate_text = str(candidate_profile.get('semantic_text') or '')
-        job_text = str(job_profile.get('semantic_text') or '')
-        app.update(
-            calculate_keyword_match(
-                candidate_keywords,
-                match_keywords,
-                inferred_keywords,
-                candidate_text,
-                job_text,
-            )
-        )
+        app.update(hybrid_match(app['seeker'] | {
+            'resume_text': candidate_profile.get('semantic_text', ''),
+        }, job))
         if 'resume_text' in app['seeker']:
             del app['seeker']['resume_text']
     return jsonify(applicants)
@@ -1684,11 +1726,6 @@ def get_recruiter_applicants():
     
     all_applicants = []
     for job in recruiter_jobs:
-        job_profile = build_job_profile(
-            skills_text=job.get('skills', ''),
-            title=job.get('title', ''),
-            description=job.get('description', ''),
-        )
         applicants = []
         for application in mongo.db.applications.find({'job_id': job['_id']}).sort('applied_at', -1):
             seeker = find_user_by_id(application.get('seeker_id'))
@@ -1702,18 +1739,9 @@ def get_recruiter_applicants():
             app['seeker']['_id'] = str(app['seeker']['_id'])
             app['job_title'] = job['title']
             candidate_profile = build_live_candidate_profile(app['seeker'])
-            candidate_keywords = coerce_string_list(candidate_profile.get('matching_keywords'))
-            match_keywords = coerce_string_list(job_profile.get('match_keywords'))
-            inferred_keywords = coerce_string_list(job_profile.get('inferred_keywords'))
-            candidate_text = str(candidate_profile.get('semantic_text') or '')
-            job_text = str(job_profile.get('semantic_text') or '')
-            match = calculate_keyword_match(
-                candidate_keywords,
-                match_keywords,
-                inferred_keywords,
-                candidate_text,
-                job_text,
-            )
+            match = hybrid_match(app['seeker'] | {
+                'resume_text': candidate_profile.get('semantic_text', ''),
+            }, job)
             app.update(match)
             if 'resume_text' in app['seeker']:
                 del app['seeker']['resume_text']

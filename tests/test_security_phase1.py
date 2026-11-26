@@ -606,3 +606,39 @@ def test_jobs_list_keeps_array_response_when_empty(monkeypatch):
     response = module.app.test_client().get('/api/jobs')
     assert response.status_code == 200
     assert response.json == []
+
+
+def test_account_deletion_removes_private_resume_sessions_and_notifications(monkeypatch, tmp_path):
+    module = load_flask_entrypoint(monkeypatch)
+    user_id = ObjectId()
+    resume = tmp_path / 'resume.pdf'
+    resume.write_bytes(b'%PDF-1.7\nresume')
+    seeker = {
+        '_id': user_id,
+        'name': 'Candidate',
+        'email': 'candidate@example.com',
+        'role': 'jobseeker',
+        'resume': f'/api/users/{user_id}/resume/{resume.name}',
+        'is_active': True,
+    }
+    fake_db = SimpleNamespace(
+        users=FakeCollection([seeker]), jobseekers=FakeCollection([seeker]),
+        recruiters=FakeCollection(), admins=FakeCollection(), jobs=FakeCollection(),
+        applications=FakeCollection([{'seeker_id': user_id}]),
+        refresh_sessions=FakeCollection([{'user_id': str(user_id)}]),
+        notifications=FakeCollection([{'user_id': user_id}]),
+        activity_logs=FakeCollection(),
+    )
+    monkeypatch.setattr(module.mongo, 'db', fake_db, raising=False)
+    module.app.config.update(TESTING=True, RATELIMIT_ENABLED=False, UPLOAD_FOLDER=str(tmp_path))
+    token = issue_access_token(str(user_id), module.app.config['SECRET_KEY'], 15)
+    response = module.app.test_client().delete(
+        '/api/users/account', headers={'Authorization': f'Bearer {token}'}
+    )
+    assert response.status_code == 200
+    assert not resume.exists()
+    assert fake_db.jobseekers.documents == []
+    assert fake_db.users.documents == []
+    assert fake_db.applications.documents == []
+    assert fake_db.refresh_sessions.documents == []
+    assert fake_db.notifications.documents == []

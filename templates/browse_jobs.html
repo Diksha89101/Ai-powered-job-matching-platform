@@ -200,7 +200,7 @@
 
         </div>
 
-        <div id="jobList" class="job-list"></div>
+        <div id="jobList" class="job-list" aria-live="polite"></div>
 
     </div>
 
@@ -209,80 +209,19 @@
     <script>
         const MIN_MATCH_PERCENTAGE_TO_APPLY = {{ min_match_percentage|tojson }};
         let allJobs = [];
-        const exampleJobs = [
-            {
-                _id: '507f1f77bcf86cd799439011',
-                title: 'Frontend Developer',
-                company: 'BrightPath Technologies',
-                location: 'Bengaluru, Karnataka',
-                description: 'Build responsive, accessible user experiences for a modern SaaS product used by growing teams across India.',
-                skills: 'JavaScript, React, CSS, UI/UX',
-                matchPercentage: 94,
-                alreadyApplied: false
-            },
-            {
-                _id: '507f1f77bcf86cd799439012',
-                title: 'Python Backend Engineer',
-                company: 'CloudHarbor Systems',
-                location: 'Remote',
-                description: 'Design and maintain scalable APIs, service integrations, and backend workflows for cloud applications.',
-                skills: 'Python, Flask, MongoDB, REST APIs',
-                matchPercentage: 96,
-                alreadyApplied: false
-            },
-            {
-                _id: '507f1f77bcf86cd799439013',
-                title: 'Data Analyst',
-                company: 'Northstar Analytics',
-                location: 'Pune, Maharashtra',
-                description: 'Turn business data into dashboards, reporting, and insights that help teams make better decisions.',
-                skills: 'SQL, Python, Power BI, Data Visualization',
-                matchPercentage: 91,
-                alreadyApplied: false
-            },
-            {
-                _id: '507f1f77bcf86cd799439014',
-                title: 'Product Designer',
-                company: 'LumaWorks',
-                location: 'Hyderabad, Telangana',
-                description: 'Create polished product experiences, user flows, and design systems for consumer-facing digital products.',
-                skills: 'Figma, UX Design, Prototyping, Research',
-                matchPercentage: 88,
-                alreadyApplied: false
-            }
-        ];
-
         function normalizeJobs(rawJobs) {
-            if (!Array.isArray(rawJobs)) {
-                return exampleJobs;
-            }
-
+            if (!Array.isArray(rawJobs)) return [];
             return rawJobs.filter(job => {
-                if (!job || typeof job !== 'object') {
-                    return false;
-                }
-
-                const title = String(job.title || '').trim();
-                const company = String(job.company || '').trim();
-                const location = String(job.location || '').trim();
-                const isErrorObject = !title && !company && !location && Object.prototype.hasOwnProperty.call(job, 'error');
-                return !isErrorObject;
-            }).length ? rawJobs.filter(job => {
-                if (!job || typeof job !== 'object') {
-                    return false;
-                }
-
-                const title = String(job.title || '').trim();
-                const company = String(job.company || '').trim();
-                const location = String(job.location || '').trim();
-                const isErrorObject = !title && !company && !location && Object.prototype.hasOwnProperty.call(job, 'error');
-                return !isErrorObject;
-            }) : exampleJobs;
+                if (!job || typeof job !== 'object') return false;
+                return Boolean(String(job.title || '').trim() || String(job.company || '').trim() || job._id);
+            });
         }
 
         async function loadJobs() {
             const container = document.getElementById('jobList');
-            container.innerHTML = '<p>Loading jobs...</p>';
+            container.setAttribute('aria-busy', 'true');
+            container.setAttribute('role', 'status');
+            container.textContent = 'Loading jobs...';
 
             try {
                 const isJobSeeker = isLoggedIn() && getUser()?.role === 'jobseeker';
@@ -290,27 +229,20 @@
                     ? await fetchWithAuth('/jobs/recommended')
                     : await fetch(`${API_URL}/jobs`);
                 const data = await res.json();
-
                 if (!res.ok) {
-                    const errorMessage = typeof data === 'object' && data && data.error ? data.error : 'Failed to load jobs';
-                    if (/job.*not found/i.test(errorMessage)) {
-                        allJobs = exampleJobs;
-                    } else {
-                        throw new Error(errorMessage);
-                    }
-                } else if (!Array.isArray(data)) {
-                    allJobs = exampleJobs;
-                } else {
-                    allJobs = normalizeJobs(data);
+                    throw new Error(data && typeof data.error === 'string' ? data.error : 'Failed to load jobs.');
                 }
+                if (!Array.isArray(data)) throw new Error('The jobs response was invalid.');
 
+                allJobs = normalizeJobs(data);
+                container.removeAttribute('aria-busy');
                 displayJobs(allJobs);
             } catch (error) {
-                allJobs = exampleJobs;
-                displayJobs(allJobs);
+                allJobs = [];
+                container.removeAttribute('aria-busy');
+                container.textContent = error.message || 'Unable to load jobs. Please try again later.';
             }
         }
-
         function displayJobs(jobs) {
             const container = document.getElementById('jobList');
             container.innerHTML = '';

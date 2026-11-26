@@ -483,6 +483,17 @@ def _extract_docx_text(file_path: str) -> str:
         with zipfile.ZipFile(file_path) as docx_file:
             xml_bytes = docx_file.read("word/document.xml")
         root = ElementTree.fromstring(xml_bytes)
+        paragraphs = []
+        for paragraph in (node for node in root.iter() if node.tag.endswith("}p")):
+            paragraph_text = "".join(
+                node.text or ""
+                for node in paragraph.iter()
+                if node.tag.endswith("}t")
+            )
+            if paragraph_text.strip():
+                paragraphs.append(paragraph_text)
+        if paragraphs:
+            return _clean_extracted_text("\n".join(paragraphs))
         text_nodes = [node.text for node in root.iter() if node.text]
         return _clean_extracted_text(" ".join(text_nodes))
     except Exception:
